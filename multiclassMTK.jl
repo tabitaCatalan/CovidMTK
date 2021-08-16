@@ -1,11 +1,12 @@
-using ModelingToolkit, OrdinaryDiffEq, Plots 
+using ModelingToolkit, OrdinaryDiffEq
+using Plots: plot, plot!
 
 
 n = 2 #length(comunas) # number of classes 
 m = 2 # number of environments 
 
 @parameters t γₑ β[1:m] N[1:n]
-@variables α(t) S[1:n](t) E[1:n](t) λ[1:n](t) R[1:n](t)
+@variables α[1:n](t) S[1:n](t) E[1:n](t) λ[1:n](t) R[1:n](t)
 
 
 D = Differential(t) 
@@ -34,27 +35,25 @@ D = Differential(t)
 
 eqs = [
     [TRM[i] ~ residence_times_matrix2(t)[i] for i in 1:n*m];
-    [λ[i] ~ α * (TRM* (β .* (TRM' * E) ./ (TRM' * N)))[i] for i = 1:n];
+    [λ[i] ~ (α .* (TRM* (β .* (TRM' * E) ./ (TRM' * N))))[i] for i = 1:n];
     [D(S[i]) ~ - λ[i] .* S[i] for i in 1:n];
     [D(E[i]) ~ λ[i] .* S[i] - γₑ * E[i] for i in 1:n];
     [D(R[i]) ~ γₑ * E[i] for i in 1:n]; 
-    [D(α) ~ 0.];
+    [D(α[i]) ~ 0. for i in 1:n];
 ];
-
-
 
 @named epi_system = ODESystem(eqs, t)
 
 # Initial conditions 
 S0 = [infocomunas[comuna].poblacion for comuna in comunas2];
 E0 = 10 * rand(n) .+ 5; # agregué gente random a una comuna random 
-R0 = zeros(n);
+R0 = 0.1 * ones(n);
 # S0 = [1200., 1550.]; E0 = [3.,5.,]; R0 = [0.,0.]; 
 
 total = S0 + E0 + R0
 # Vector de condiciones iniciales 
 u0 = [
-    [α => 0.01];
+    [α[i] => 0.1 for i in 1:n];
     [S[i] => S0[i] for i in 1:n]; 
     [E[i] => E0[i] for i in 1:n]; 
     [R[i] => R0[i] for i in 1:n]
@@ -63,7 +62,7 @@ u0 = [
 beta = [1., 5.] # hay que probar qué tan sensible es c/r al segundo valor β₂
 
 p = [
-    [γₑ => 1/7]; # midiendo en semanas... un lío con la matrix P 
+    [γₑ => 1/5.]; # midiendo en semanas... un lío con la matrix P 
     [N[i] => total[i] for i = 1:n];
     [β[i] => beta[i] for i = 1:m];
 ]
@@ -81,7 +80,7 @@ prob = ODEProblem(simple_epi_system, u0, (0.0,400.0), p);
 #prob1 = ODEProblem(simple_epi_system, u0, (0.0,400.0), p1);
 #prob2 = ODEProblem(simple_epi_system, u0, (0.0,400.0), p);
 sol = solve(prob, Tsit5(), saveat = 1.);
-sol1 = solve(prob);
+#sol1 = solve(prob);
 #sol1 =  solve(prob1, Tsit5());
 
 using Plots: plot, plot!
