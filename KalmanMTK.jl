@@ -81,10 +81,14 @@ observedindexs = ModelingToolkit.varmap_to_vars(
     [
         S[1] => 0, 
         S[2] => 0, 
-        E[1] => 1, 
-        E[2] => 1, 
+        E[1] => 0, 
+        E[2] => 0, 
         R[1] => 0,
         R[2] => 0, 
+        I[1] => 0,
+        I[2] => 0,
+        C[1] => 1,
+        C[2] => 1,
         α[1] => 0, 
         α[2] => 0   ]
     ,states(simple_epi_system)
@@ -112,6 +116,10 @@ lowpass_parameters = ModelingToolkit.varmap_to_vars(
         E[2] => 0.8, 
         R[1] => 0.8,
         R[2] => 0.8, 
+        I[1] => 0.8,
+        I[2] => 0.8,
+        C[1] => 0.8,         
+        C[2] => 0.8,
         α[1] => .2, 
         α[2] => .2   ]
     ,states(simple_epi_system)
@@ -196,7 +204,9 @@ function initial_u0(a0)
         [α[i] => a0 for i in 1:n];
         [S[i] => S0[i] for i in 1:n]; 
         [E[i] => E0[i] for i in 1:n]; 
-        [R[i] => R0[i] for i in 1:n]
+        [R[i] => R0[i] for i in 1:n];
+        [I[i] => I0[i] for i in 1:n];
+        [C[i] => C0[i] for i in 1:n];
     ];
 end 
 
