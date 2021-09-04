@@ -5,8 +5,8 @@ using Plots: plot, plot!
 n = 2 #length(comunas) # number of classes 
 m = 2 # number of environments 
 
-@parameters t γₑ β[1:m] N[1:n]
-@variables α[1:n](t) S[1:n](t) E[1:n](t) λ[1:n](t) R[1:n](t)
+@parameters t γₑ γᵢ β[1:m] N[1:n]
+@variables α[1:n](t) S[1:n](t) E[1:n](t) λ[1:n](t) I[1:n](t) R[1:n](t) C[1:n](t)
 
 
 D = Differential(t) 
@@ -27,27 +27,33 @@ D = Differential(t)
 #     ]
 # end 
 # @register Pmatrix(t)
-
+#function residence_times_matrix(t) residence_times_matrix2(t) end 
 #@register residence_times_matrix(t)
-@register residence_times_matrix2(t)
+@register residence_times_matrix2(t)#::Array{Float64,2}
 
 @variables TRM[1:n, 1:m](t)
 
 eqs = [
-    [TRM[i] ~ residence_times_matrix2(t)[i] for i in 1:n*m];
+    #[TRM[i] ~ residence_times_matrix2(t)[i] for i in 1:n*m];
     [λ[i] ~ (α .* (TRM* (β .* (TRM' * E) ./ (TRM' * N))))[i] for i = 1:n];
     [D(S[i]) ~ - λ[i] .* S[i] for i in 1:n];
     [D(E[i]) ~ λ[i] .* S[i] - γₑ * E[i] for i in 1:n];
-    [D(R[i]) ~ γₑ * E[i] for i in 1:n]; 
+    [D(I[i]) ~ γₑ * E[i] - γᵢ * I[i] for i in 1:n]; 
+    [D(R[i]) ~ γᵢ * I[i] for i in 1:n]; 
+    [D(C[i]) ~ γₑ * E[i] for i in 1:n];
     [D(α[i]) ~ 0. for i in 1:n];
 ];
+
+[TRM[i] ~ residence_times_matrix2(t)[i] for i in 1:n*m];
 
 @named epi_system = ODESystem(eqs, t)
 
 # Initial conditions 
 S0 = [infocomunas[comuna].poblacion for comuna in comunas2];
 E0 = 10 * rand(n) .+ 5; # agregué gente random a una comuna random 
+I0 = 0.1 * ones(n);
 R0 = 0.1 * ones(n);
+C0 = 0.1 * ones(n);
 # S0 = [1200., 1550.]; E0 = [3.,5.,]; R0 = [0.,0.]; 
 
 total = S0 + E0 + R0
@@ -55,22 +61,34 @@ total = S0 + E0 + R0
 u0 = [
     [α[i] => 0.1 for i in 1:n];
     [S[i] => S0[i] for i in 1:n]; 
-    [E[i] => E0[i] for i in 1:n]; 
-    [R[i] => R0[i] for i in 1:n]
-];
+    [E[i] => E0[i] for i in 1:n];
+    [I[i] => I0[i] for i in 1:n]; 
+    [R[i] => R0[i] for i in 1:n];
+    [C[i] => C0[i] for i in 1:n];
+]; 
 
 beta = [1., 5.] # hay que probar qué tan sensible es c/r al segundo valor β₂
 
 p = [
-    [γₑ => 1/5.]; # midiendo en semanas... un lío con la matrix P 
+    [γₑ => 1/5., γᵢ => 1/14.]; # midiendo en semanas... un lío con la matrix P 
     [N[i] => total[i] for i = 1:n];
     [β[i] => beta[i] for i = 1:m];
 ]
-p1 = [
+
+class_names = [
+    [α[i] => "α[$i]" for i in 1:n];
+    [S[i] => "S[$i]" for i in 1:n]; 
+    [E[i] => "E[$i]" for i in 1:n];
+    [I[i] => "I[$i]" for i in 1:n]; 
+    [R[i] => "R[$i]" for i in 1:n];
+    [C[i] => "C[$i]" for i in 1:n];
+]; 
+
+#=p1 = [
     [γₑ => 1/7]; # midiendo en semanas... un lío con la matrix P 
     [N[i] => total[i] for i = 1:n];
     [β[i] => beta[i] for i = 1:m];
-]
+]=#
 # Hay que hacer un collect en algún lado! Chriss Rackauckas
 
 simple_epi_system = structural_simplify(epi_system);
