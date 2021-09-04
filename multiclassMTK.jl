@@ -11,31 +11,14 @@ m = 2 # number of environments
 
 D = Differential(t) 
 
-# using Random
-# variations1 = rand(20)/5;
-# variations2 = rand(20)/10; 
-
-# function Pmatrix(t)
-#     if t >= 20. 
-#         index = 20 
-#     else 
-#         index = floor(Int, t) + 1
-#     end 
-#     [
-#         (0.8 - variations1[index]) (0.2 + variations1[index]);
-#         (0.9 - variations2[index]) (0.1 + variations2[index])
-#     ]
-# end 
-# @register Pmatrix(t)
-#function residence_times_matrix(t) residence_times_matrix2(t) end 
-#@register residence_times_matrix(t)
-@register residence_times_matrix2(t)#::Array{Float64,2}
+@variables i j 
+@register residence_times_matrix2(t, i, j)#::Array{Float64,2}
 
 @variables TRM[1:n, 1:m](t)
 
 eqs = [
-    #[TRM[i] ~ residence_times_matrix2(t)[i] for i in 1:n*m];
-    [λ[i] ~ (α .* (TRM* (β .* (TRM' * E) ./ (TRM' * N))))[i] for i = 1:n];
+    vec([TRM[i,j] ~ residence_times_matrix2(t, i, j) for i in 1:n, j in 1:m]);
+    collect(λ .~ (α .* (TRM* (β .* (TRM' * E) ./ (TRM' * N)))));
     [D(S[i]) ~ - λ[i] .* S[i] for i in 1:n];
     [D(E[i]) ~ λ[i] .* S[i] - γₑ * E[i] for i in 1:n];
     [D(I[i]) ~ γₑ * E[i] - γᵢ * I[i] for i in 1:n]; 
@@ -43,8 +26,6 @@ eqs = [
     [D(C[i]) ~ γₑ * E[i] for i in 1:n];
     [D(α[i]) ~ 0. for i in 1:n];
 ];
-
-[TRM[i] ~ residence_times_matrix2(t)[i] for i in 1:n*m];
 
 @named epi_system = ODESystem(eqs, t)
 
