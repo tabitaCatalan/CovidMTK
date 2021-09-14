@@ -112,18 +112,26 @@ begin
     =#
     interpolated_data = interpolate_data(confirmedmap[comunas[1]])
 
-    observaciones = Array{Float64, 2}(undef, length(interpolated_data), length(comunas2))
+    observaciones = Array{Float64, 2}(undef, length(interpolated_data), length(comunas2) + n)
     for (i,comuna) in enumerate(comunas2)
         observaciones[:,i] .= interpolate_data(confirmedmap[comuna])
-    end
-
+    end 
+    # perfect observations restriction to assure S + E + I + R = N 
+    # no es lo más eficiente en términos de memoria....
+    for i in 1:n 
+        observaciones[:, i + length(comunas2)] .= total[i]
+    end 
     system = KalmanFilter.Measurements(observaciones, dt)
 
-    H = obsmatrix(observedindexs)
+    obs_exp = [C[1], C[2], 
+        [S[i] + E[i] + I[i] + R[i] for i in 1:n]...  
+    ]
+    H = get_observacion_matrix(obs_exp, simple_epi_system)
 
-    G = 10. * ones(n)
+    G = ones(2 * n)
+    G[1:n] *= 1000.; G[n+1:2n] *= 2.
 
-    observer = KalmanFilter.LinearObserver(H, zeros(2), G, observation_integrity)
+    observer = KalmanFilter.LinearObserver(H, zeros(2n), G, observation_integrity)
     #=
     Iterator y matriz de covarianzas inicial 
     =# 
@@ -162,7 +170,11 @@ function kalman_iteration(u0, p)
     obs_exp = [C[1], C[2]]
     H = get_observacion_matrix(obs_exp, simple_epi_system)
 
-    observer = KalmanFilter.LinearObserver(H, zeros(2), G, observation_integrity)
+    G = ones(2 * n)
+    G[1:n] *= 1000.; G[n+1:2n] *= 10.
+
+    observer = KalmanFilter.LinearObserver(H, zeros(2n), G, observation_integrity)
+
     #=
     Iterator y matriz de covarianzas inicial 
     =# 
