@@ -119,18 +119,13 @@ end
 
 lowpass_parameters = ModelingToolkit.varmap_to_vars(
     [
-        S[1] => 0.8, 
-        S[2] => 0.8, 
-        E[1] => 0.8, 
-        E[2] => 0.8, 
-        R[1] => 0.8,
-        R[2] => 0.8, 
-        I[1] => 0.8,
-        I[2] => 0.8,
-        C[1] => 0.8,         
-        C[2] => 0.8,
-        α[1] => .2, 
-        α[2] => .2   ]
+        [S[i] => 0.8 for i in 1:n]; 
+        [E[i] => 0.8 for i in 1:n]; 
+        [R[i] => 0.8 for i in 1:n]; 
+        [I[i] => 0.8 for i in 1:n]; 
+        [C[i] => 0.8 for i in 1:n]; 
+        [α[i] => 0.3 for i in 1:n];
+        ]
     ,states(simple_epi_system)
 );
 
