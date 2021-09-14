@@ -86,37 +86,6 @@ observation_integrity(x) = max.(x,0.)
 
 dt = 1. 
 
-observedindexs = ModelingToolkit.varmap_to_vars(
-    [
-        S[1] => 0, 
-        S[2] => 0, 
-        E[1] => 0, 
-        E[2] => 0, 
-        R[1] => 0,
-        R[2] => 0, 
-        I[1] => 0,
-        I[2] => 0,
-        C[1] => 1,
-        C[2] => 1,
-        α[1] => 0, 
-        α[2] => 0   ]
-    ,states(simple_epi_system)
-);
-
-function obsmatrix(indexs)
-    filas = sum(indexs)
-    columnas = length(indexs)
-    H = zeros(filas, columnas) 
-    counter = 1 
-    for (i,value) in enumerate(indexs)
-        if value == 1
-            H[counter, i] = 1
-            counter += 1
-        end 
-    end 
-    H 
-end 
-
 lowpass_parameters = ModelingToolkit.varmap_to_vars(
     [
         [S[i] => 0.8 for i in 1:n]; 
@@ -189,9 +158,9 @@ function kalman_iteration(u0, p)
     nlupdater = NLUpdater(rkx, x -> F(u0vec), Q, copy(u0vec), 0., 0., x -> SI2(x, total))
     system = KalmanFilter.Measurements(observaciones, dt)
 
-    H = obsmatrix(observedindexs)
 
-    G = 10. * ones(n)
+    obs_exp = [C[1], C[2]]
+    H = get_observacion_matrix(obs_exp, simple_epi_system)
 
     observer = KalmanFilter.LinearObserver(H, zeros(2), G, observation_integrity)
     #=
