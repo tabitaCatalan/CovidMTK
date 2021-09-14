@@ -128,7 +128,7 @@ begin
     Iterator y matriz de covarianzas inicial 
     =# 
     Pfunc = (x) -> F(x) * F(x)'
-    iterator = KalmanFilter.LinearKalmanIterator(u0vec, Pfunc(u0vec), nlupdater, observer, system, dt, lowpass_parameters)
+    iterator = KalmanFilter.LinearKalmanIterator(u0vec, Pfunc(max_values_vec), nlupdater, observer, system, dt, lowpass_parameters)
 end 
 #=
 Correr todo 
@@ -166,8 +166,8 @@ function kalman_iteration(u0, p)
     #=
     Iterator y matriz de covarianzas inicial 
     =# 
-    #Pfunc = (x) -> F(x) * F(x)'
-    iterator = KalmanFilter.LinearKalmanIterator(u0vec, Pfunc(u0vec), nlupdater, observer, system, dt, lowpass_parameters) 
+    Pfunc = (x) -> F(x) * F(x)'
+    iterator = KalmanFilter.LinearKalmanIterator(u0vec, Pfunc(max_values_vec), nlupdater, observer, system, dt, lowpass_parameters) 
 
     results, ensamble = KalmanFilter.full_iteration(iterator, dt, Nmediciones, t -> 0., 1) 
     results
