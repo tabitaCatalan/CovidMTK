@@ -227,18 +227,43 @@ Plotting
 
 rango = 1:length(ts)
 
-plot(results, ts, 4, rango)
+using Plots: plot, plot!
+find_in_states(sym, system) = findfirst(isequal(sym),states(system))
 
-plot(results.analysis[rango, 1])
-plot!(results.analysis[rango, 2])
+function result_dic(analysis, system) 
+    results_from_sym(sym) = analysis[:,find_in_states(sym, system)]
+    dict = [state => results_from_sym(state) for state in states(system)]
+end 
 
-plot(results.analysis[rango, 3], label = "Expuestos")
-plot!(results.analysis[rango, 4], label = "Expuestos")
-plot!(observaciones[rango, 1], label = "Obs1")
-plot!(observaciones[rango, 2], label = "Obs2")
+dict = result_dic(results.analysis, simple_epi_system)
 
-plot(results.analysis[rango, 5])
-plot!(results.analysis[rango, 6])
+function vec_from_dic(dic, system)
+    hcat(ModelingToolkit.varmap_to_vars(dic, states(system))...)'
+end 
 
-plot(results.analysis[rango, 7])
-plot!(results.analysis[rango, 8]) 
+
+"""
+- `sym_expression`: using variables from states(system). 
+- `ordered_results`: an 2d array 
+        filas: states, in the order given by ModelingToolkit.varmap_to_vars.
+        columns: timestamps 
+# Example 
+```julia
+julia> eval_expression(C[1] + E[2] + 5R[1], ordered_results, simple_epi_system)
+```
+"""
+function eval_expression(sym_expression, ordered_results, system)
+    number_of_states, total_steps = size(ordered_results)
+    func = eval(build_function(sym_expression, states(system),  expression=Val{false}))
+    
+    evaluated_array = Vector{Float64}(undef, total_steps)
+    for k in 1:total_steps
+        states_at_k = ordered_results[:,k]
+        evaluated_array[k] = func(states_at_k)
+    end 
+    evaluated_array
+end 
+
+total_class_1 = eval_expression(S[1] + E[1] + R[1] + I[1], vec_from_dic(dict, simple_epi_system), simple_epi_system)
+
+plot(ts, total_class_1)
