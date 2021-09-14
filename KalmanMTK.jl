@@ -141,7 +141,7 @@ end
 #=
 Correr todo 
 =#
-results, ensamble = KalmanFilter.full_iteration(iterator, dt, Nmediciones, t -> 0., 1)
+#results, ensamble = KalmanFilter.full_iteration(iterator, dt, Nmediciones, t -> 0., 1)
 #@enter KalmanFilter.full_iteration(iterator, dt, Nmediciones, t -> 0., 1)
 
 #============================================
@@ -181,8 +181,12 @@ function kalman_iteration(u0, p)
     Pfunc = (x) -> F(x) * F(x)'
     iterator = KalmanFilter.LinearKalmanIterator(u0vec, Pfunc(max_values_vec), nlupdater, observer, system, dt, lowpass_parameters) 
 
-    results, ensamble = KalmanFilter.full_iteration(iterator, dt, Nmediciones, t -> 0., 1) 
-    results
+    #results, ensamble = KalmanFilter.full_iteration(iterator, dt, Nmediciones, t -> 0., 1) 
+    
+    results, ensamble, Pnp1n_matrixs, Pnn_matrixs, Fn_matrixs = full_iteration_saver(iterator, dt, Nmediciones, t -> 0., 1)
+    xs, Ps = rts_smoother(results, Pnp1n_matrixs, Pnn_matrixs, Fn_matrixs, Nmediciones)
+
+    results, xs, Ps
 end 
 
 function initial_u0(a0)
@@ -204,8 +208,11 @@ function loss_from_alpha0(a0, rango = 1:100)
     loss(results, observaciones, rango)
 end 
 
-results = kalman_iteration(initial_u0(1e-8), p)
 
+results, xs, Ps = kalman_iteration(initial_u0(a₀), p)
+#@run kalman_iteration(initial_u0(a₀), p)
+
+#= 
 a0s = 0.001:0.001:0.01
 a0s = 1e-7:1e-7:1e-6
 
