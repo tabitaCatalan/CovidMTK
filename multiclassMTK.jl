@@ -100,9 +100,9 @@ ts = 0.:1.:300.
 
 rango = 1:2
 
-a_plot = plot(title = "Incidencias") 
-[plot!(a_plot, sol[E[i], :] ./ sol[S[i], 1], label = infocomunas[comunas2[i]].nombre) for i in rango]
-display(a_plot)
+#a_plot = plot(title = "Incidencias") 
+#[plot!(a_plot, sol[E[i], :] ./ sol[S[i], 1], label = infocomunas[comunas2[i]].nombre) for i in rango]
+#display(a_plot)
 
 #=
 Jacobiano

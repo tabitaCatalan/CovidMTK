@@ -61,7 +61,9 @@ sum(length(confirmedmap[key]) .== 140 for key in keys(datamap)) # 51
 sum(timestamp(confirmedmap[key][1])[1] .== Date(2020,03,30) for key in keys(datamap)) # 51 
 sum(timestamp(confirmedmap[key][end])[1] .== Date(2021,07,23) for key in keys(datamap)) # 51 
 
+#==
 using Plots: plot, plot! 
 a_plot = plot(title = "Confirmados/población por comuna", legend = :topleft) 
 [plot!(a_plot, confirmedmap[comuna]./infocomunas[comuna].poblacion, label = infocomunas[comuna].nombre) for comuna in comunas[15:20]];
 a_plot  
+==#

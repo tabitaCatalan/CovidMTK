@@ -52,13 +52,13 @@ function interpolate_data(data_comuna::TimeArray)
     itp.(full_grid)
 end 
 
-plot(interpolate_data(confirmedmap[comunas[1]]))
-interpolate_data(confirmedmap[comunas[2]])
+# plot(interpolate_data(confirmedmap[comunas[1]]))
+# interpolate_data(confirmedmap[comunas[2]])
 # quiero todos los índices de las mediciones 
 
-A = rand(10)
+#A = rand(10)
 
-scatter(measured, A) 
-interpolate((measured,), A, Gridded(Linear()))
+#scatter(measured, A) 
+#interpolate((measured,), A, Gridded(Linear()))
 
-get_index_measured_dates() 
+#get_index_measured_dates() 
