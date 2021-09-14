@@ -1,9 +1,12 @@
 using KalmanFilter
-using LinearAlgebra
+using LinearAlgebra: Diagonal
 using StaticArrays
 
 #= 
 Dinámica del sistema 
+
+Restricciones y todo eso 
+https://academic.csuohio.edu/simond/pubs/IETKalman.pdf
 =# 
 epi_dynamics(x, α, p, t) = rhs_func(x, p, t)  
 epi_jacobian(x, α,  p, t) = system_jacobian(x, p, t) 
