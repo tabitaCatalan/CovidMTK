@@ -15,10 +15,16 @@ Condiciones iniciales
 u0vec
 dispersion(ν, x) = Diagonal(ν .* x)
 
-F = (x) -> dispersion(0.001 * ones(length(x)), x)
-F(u0vec)
-T = 400; 
-dimensions = 6
+max_values = [
+    [α[i] => 1e-2 for i in 1:n];
+    [S[i] => S0[i] for i in 1:n]; 
+    [E[i] => 0.3 * S0[i] for i in 1:n];
+    [I[i] => 0.3 * S0[i] for i in 1:n]; 
+    [R[i] => 0.3 * S0[i] for i in 1:n];
+    [C[i] => 0.3 * S0[i] for i in 1:n];
+]; 
+
+max_values_vec = ModelingToolkit.varmap_to_vars(max_values, states(simple_epi_system))
 
 dt = 1.#0.1 # Intervalo de sampleo de observaciones 
 T = 400. # Se resolverá el problema en el intervalo [0,T]
@@ -129,7 +135,8 @@ begin
     rkx = KalmanFilter.RK4Dx(epi_dynamics, epi_jacobian, pvec, dt)
 
     Q = Diagonal(sqrt(dt) * ones(length(u0vec)))
-    nlupdater = NLUpdater(rkx, x -> F(u0vec), Q, copy(u0vec), 0., 0., x -> SI2(x, total))
+
+    nlupdater = NLUpdater(rkx, x -> F(max_values_vec), Q, copy(u0vec), 0., 0., x -> SI2(x, total))
 
     #epi_dynamics(u0vec,0., pvec, 0.) 
 
