@@ -56,11 +56,11 @@ struct StateIntegrity{A <: AbstractArray}
 end 
 
 function (SI::StateIntegrity)(x, total)
-    oldS = x[SI.indexS]; oldE = x[SI.indexE]; oldR = x[SI.indexR]; 
-    suma = oldS + oldE + oldR 
-    x[SI.indexS] .= oldS .* total ./ suma  
-    x[SI.indexE] .= oldE .* total ./ suma  
-    x[SI.indexR] .= oldR .* total ./ suma  
+    #oldS = x[SI.indexS]; oldE = x[SI.indexE]; oldR = x[SI.indexR]; 
+    #suma = oldS + oldE + oldR 
+    #x[SI.indexS] .= oldS .* total ./ suma  
+    #x[SI.indexE] .= oldE .* total ./ suma  
+    #x[SI.indexR] .= oldR .* total ./ suma  
     x .= max.(x, 0.)
 end 
 # a esto le hace falta testearlo....
