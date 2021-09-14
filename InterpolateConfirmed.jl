@@ -5,7 +5,8 @@ Requiere haber corrido ConfirmedComunas.jl,
 and confirmedmap be defined. 
 =#
 
-using Interpolations 
+using Interpolations: interpolate, Gridded, Linear 
+using TimeSeries
 
 #=
 Ejemplo de interpolación sencilla, que funciona con grilla
