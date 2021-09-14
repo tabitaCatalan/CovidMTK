@@ -37,19 +37,11 @@ isequal(get_observacion_map(C[1] + I[2], simple_epi_system), [
     α[1] => 0., 
     α[2] => 0.]) # da false porque no compara bien...
 
-get_observacion_map(sym_expression, system)
-function get_observacion_matrix(sym_expressions_vec, system)
-    vcat(ModellingToolkit.varmap_to_vars(
-        get_observacion_map(sym_expression, system),
-        states(system))'
-        for sym_expr in sym_expressions_vec 
-        )
-end 
 
-get_observacion_matrix([C[1] + 3R[2], α[2], 3S[1]], simple_epi_system) 
 
 get_observation_vector(sym_exp, system) = ModelingToolkit.varmap_to_vars(get_observacion_map(sym_exp, system), states(system))'
 
 get_observation_vector(C[1]+2R[2], simple_epi_system)
 
-
+get_observacion_matrix(exp_vec, system) = vcat([get_observation_vector(exp, system) for exp in exp_vec]...)
+get_observacion_matrix([C[1], C[2]], simple_epi_system) 
