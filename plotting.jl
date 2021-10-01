@@ -1,7 +1,7 @@
 #=
 Aux functions for plotting 
 =#
-
+using Plots: annotate!, text, scatter, scatter! 
 #===========================
 Symbolics variables to Strings 
 ===========================# 
@@ -53,11 +53,11 @@ calculate_exponent(ymin, ymax) = round(Int, log10(ymax - ymin)) + 1
 calculate_exponent(ymin, ymax) = floor(Int, log10(ymax)) 
 minmax(sol, var) = (minimum([sol[var[1]] sol[var[2]]]), maximum([sol[var[1]] sol[var[2]]]))
 
-function plot_scnotation!(a_plot, sol, var, subplot, scatter = false)
+function plot_scnotation!(a_plot, sol, var, subplot, scat = false)
     a = calculate_exponent(minmax(sol,var)...)
     for index in 1:length(var)
         label = to_string(var, index)
-        if scatter
+        if scat
             scatter!(a_plot, sol.t, sol[var[index]]/10^a, label = label, ylabel = "people", subplot = subplot, xticks = :none, ms = 1, msw = 0)
         else 
             plot!(a_plot, sol.t, sol[var[index]]/10^a, label = label, ylabel = "people", subplot = subplot, xticks = :none)
