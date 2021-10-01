@@ -6,8 +6,7 @@ using CSV
 using DataFrames
 using TimeSeries 
 
-
-mobfile = "..\\Datos-COVID19-MINSAL\\output\\producto82\\ISCI_weeks.csv" 
+mobfile = "../Datos-COVID19-MINSAL/output/producto82/ISCI_weeks.csv" 
 
 dfsalidas = DataFrame(CSV.File(mobfile))
 
@@ -40,26 +39,27 @@ comunas = collect(keys(datamap))
 initial_mob = 0.5 * ones(length(comunas));# get data para esto 
 
 # estoy pensando que esto debería ir al revés... tiempo pal lado 
+#=
 mob_in_time = Array{Float64, 2}(undef, length(comunas), length(datamap[comunas[1]]))
 for (i,comuna) in enumerate(comunas)
     mob_in_time[i, :] = datamap[comuna]
 end 
 mob_in_time 
-
-comunas2 = comunas[1:2]
+=#
+comunas2 = rand(comunas, 5)
+#comunas2 = [13401, 13114] # san bernardo y las condes
 mob_in_time2 = Array{Float64, 2}(undef, length(comunas2), length(datamap[comunas[1]]))
 for (i,comuna) in enumerate(comunas2)
     mob_in_time2[i, :] = datamap[comuna]
 end 
 mob_in_time2 
-Pt2 = makePmatrix([0.5,0.5], mob_in_time2);
 
-
-Pt = makePmatrix(initial_mob, mob_in_time);
+#Pt = makePmatrix(initial_mob, mob_in_time);
+Pt2 = makePmatrix(0.5 * ones(length(comunas2)), mob_in_time2);
 calculate_semana(t) = floor(Int, t/7) + 1
 #index(t) = floor(Int, t) + 1
 
-copyPt = copy(Pt); 
+#copyPt = copy(Pt); 
 struct DataMatrix
     """
     3d-matrix of dimensions (ncomunas, 2, nsemanas)."""
