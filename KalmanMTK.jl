@@ -19,7 +19,7 @@ u0vec
 dispersion(ν, x) = Diagonal(ν .* x)
 
 max_values = [
-    [α[i] => 1e-2 for i in 1:n];
+    make_alpha(simple_episys_uknown, 5e-3);
     [S[i] => S0[i] for i in 1:n]; 
     [E[i] => 0.3 * S0[i] for i in 1:n];
     [I[i] => 0.3 * S0[i] for i in 1:n]; 
@@ -70,10 +70,10 @@ end
 #https://mtk.sciml.ai/dev/basics/FAQ/#Frequently-Asked-Questions
 #indexof(sym,syms) = findfirst(isequal(sym),syms)
 
-getstateindexs(sym_state) = [findfirst(isequal(sym_state[i]), states(epi_system)) for i in 1:n] 
-indexS = getstateindexs(S)
-indexE = getstateindexs(E)
-indexR = getstateindexs(R)
+getstateindexs(sym_state, system) = [findfirst(isequal(sym_state[i]), states(system)) for i in 1:n] 
+indexS = getstateindexs(S, simple_episys_uknown)
+indexE = getstateindexs(E, simple_episys_uknown)
+indexR = getstateindexs(R, simple_episys_uknown)
 
 #SI1 = StateIntegrity(indexS, indexE, indexR)
 SI2 = StateIntegrity(SVector{n}(indexS), SVector{n}(indexE), SVector{n}(indexR))
@@ -93,9 +93,10 @@ lowpass_parameters = ModelingToolkit.varmap_to_vars(
         [R[i] => 0.8 for i in 1:n]; 
         [I[i] => 0.8 for i in 1:n]; 
         [C[i] => 0.8 for i in 1:n]; 
-        [α[i] => 0.3 for i in 1:n];
+        #[α[i] => 1. for i in 1:n];
+        make_alpha(simple_episys_uknown, 1.)
         ]
-    ,states(simple_epi_system)
+    ,states(simple_episys_uknown)
 );
 
 begin 
@@ -126,7 +127,7 @@ begin
     obs_exp = [C[1], C[2], 
         [S[i] + E[i] + I[i] + R[i] for i in 1:n]...  
     ]
-    H = get_observacion_matrix(obs_exp, simple_epi_system)
+    H = get_observacion_matrix(obs_exp, simple_episys_uknown)
 
     G = ones(2 * n)
     G[1:n] *= 1000.; G[n+1:2n] *= 2.
@@ -158,8 +159,8 @@ function loss(results, observaciones, rango)
 end 
 
 function kalman_iteration(u0, p)
-    u0vec = ModelingToolkit.varmap_to_vars(u0,states(simple_epi_system));
-    pvec = ModelingToolkit.varmap_to_vars(p,parameters(simple_epi_system));
+    u0vec = ModelingToolkit.varmap_to_vars(u0,states(simple_episys_uknown));
+    pvec = ModelingToolkit.varmap_to_vars(p,parameters(simple_episys_uknown));
     rkx = KalmanFilter.RK4Dx(epi_dynamics, epi_jacobian, pvec, dt)
 
     Q = Diagonal(sqrt(dt) * ones(length(u0vec)))
@@ -191,7 +192,7 @@ end
 
 function initial_u0(a0)
     u0 = [
-        [α[i] => a0 for i in 1:n];
+        make_alpha(simple_episys_uknown, a0);
         [S[i] => S0[i] for i in 1:n]; 
         [E[i] => E0[i] for i in 1:n]; 
         [R[i] => R0[i] for i in 1:n];
@@ -235,8 +236,6 @@ function result_dic(analysis, system)
     dict = [state => results_from_sym(state) for state in states(system)]
 end 
 
-dict = result_dic(results.analysis, simple_epi_system)
-
 function vec_from_dic(dic, system)
     hcat(ModelingToolkit.varmap_to_vars(dic, states(system))...)'
 end 
@@ -249,7 +248,7 @@ end
         columns: timestamps 
 # Example 
 ```julia
-julia> eval_expression(C[1] + E[2] + 5R[1], ordered_results, simple_epi_system)
+julia> eval_expression(C[1] + E[2] + 5R[1], ordered_results, simple_episys_uknown)
 ```
 """
 function eval_expression(sym_expression, ordered_results, system)
