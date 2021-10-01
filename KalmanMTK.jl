@@ -127,9 +127,17 @@ end
     end 
     # perfect observations restriction to assure S + E + I + R = N 
     # no es lo más eficiente en términos de memoria....
+    
     for i in 1:n 
         observaciones[:, i + length(comunas2)] .= total[i]
     end 
+    =# 
+
+    observaciones = synthetic_obs;
+    n_obs = size(observaciones)[1]
+    for i in 1:n 
+        observaciones = [observaciones total[i]*ones(n_obs)]
+    end
     system = KalmanFilter.Measurements(observaciones, dt)
 
     obs_exp = [C[1], C[2], 
