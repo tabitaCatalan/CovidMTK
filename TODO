@@ -1,0 +1,63 @@
+Artículo:
+    Introducción:
+        Comenzar pronto 
+    Background: 
+        Revisión bibliográfica:
+            ☐ Cuánto llevo, cuánto falta? Ver en dónde estoy parada aquí. Necesito avanzar un poco cada día. 
+
+    Resultados: 
+        Parte 1 - Modelo con matriz de tiempos de residencia:
+            Esto debo hacerlo sí o sí 
+            ☐ Resultados de la matriz (la imagen bonita). 
+            Hay que ir organizando el código en un repo. Todo debería quedar con un `runall.m`. 
+            ☐ Correr modelo con las 18 clases, casos simples, ver que da cosas con sentido. 
+        Parte 2 - Ajuste de parámetros: 
+            Esto también debo hacerlo.
+            ☐ Algunas cosas sencillas con Kalman, caso sintético con restricciones y con forzante. A ver si se logran recuperar los parámetros. 
+        Parte 3 - Juntar todo:  
+            Este es el más incierto de todos, ... no me puedo concentrar exclusivamente en él.
+            ☐ Probar con un solo factor 
+            ☐ Probar con varios factores 
+            ☐ Caso sintético complejo... con valores de acumulados más o menos en la misma escala.  
+    
+    Discusión: 
+        Comenzaré esto la próxima semana  
+    Conclusiones: 
+        Comenzaré esto la próxima semana 
+    Anexos:
+        Avanzar un poco cada día 
+
+Cuánto puedo trabajar cada día? 4hrs mínimo, sería ideal trabajar unas 6hrs. 
+Hoy tengo 2 
+4 por cada día... 12 hrs hasta el martes
+4 x 6 = 24 hasta el 
+Idealmente 6 x 6 = 36 horas. 
+Pero la próxima semana iré a mi casa, no sé cómo manejaré eso. 
+
+Código: 
+    ✔ Caso sintético "complejo", usaré los datos de movilidad como forzante, buscaré un control que dé algunos resultados medianamente razonables (órdenes de magnitud con sentido) y trataré de recuperar la cosa. @done(21-09-23 08:14)
+        Esto funciona. Ahora tengo que agregarlo a la tesis 
+        ✔ Hacer que sea fácil calcular este caso (se tarda mucho y hay que meter mano a muchas cosas). @done(21-09-24 09:55)
+        ☐ Literate.jl, que quede ordenado y bonito.
+        ☐ Obtener resultados bonitos, gráficos adecuados (varios con el mismo eje x, etc). 
+        ☐ Agregar al paper.
+
+    ☐ Otra opción es incorporar los infectados como observaciones. 
+    ☐ Usar datos regularizados 
+    Qué pasa si en lugar de acumulados uso nuevos contagios? Mi observación sería `\gamma_i I`, que es simple de tratar también..... ahh pero hay un problema, los valores diarios hacen aún más supuestos, porque solo conozco las cantidades cada varios días.
+
+    ✔ Revisar las fechas... coinciden los datos de movilidad con los de los confirmados? @done(21-09-20 14:14) 
+
+
+Gráficos: 
+    Hay varios gráficos que me interesa hacer. 
+    Estimaciones de susceptibilidad por comuna 
+    Cantidad de personas susceptibles por comuna 
+    Qué tanto afectaron las vacunas
+    Qué habría pasado en un escenario sin vacunas 
+    Usar IPS para pintar las comunas.
+    ✘ Aprender a usar Makie.jl @cancelled(21-10-01 12:36)
+
+    ☐ Forma rápida de obtener todos los resultados 
+    ☐ Agregar fechas 
+    ☐ Qué tanta variación hay con respecto a considerar los tiempos de residencia iniciales (obtenidos con la EOD2012).
