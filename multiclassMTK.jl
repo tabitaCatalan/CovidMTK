@@ -131,22 +131,22 @@ rango = 1:2
 #display(a_plot)
 
 #=
-Jacobiano
+Jacobian to use with Kalman Filter 
 =#
 
 
-jac = generate_jacobian(simple_epi_system); # esto debería ser la función que devuelve el jacobiano 
+jac = generate_jacobian(simple_episys_uknown); # esto debería ser la función que devuelve el jacobiano 
 
 system_jacobian = eval(jac[1]);
 
-pvec = ModelingToolkit.varmap_to_vars(p,parameters(simple_epi_system));
-u0vec = ModelingToolkit.varmap_to_vars(u0,states(simple_epi_system));
+pvec = ModelingToolkit.varmap_to_vars(p,parameters(simple_episys_uknown));
+u0vec = ModelingToolkit.varmap_to_vars(u0,states(simple_episys_uknown));
+#class_names_vec = ModelingToolkit.varmap_to_vars(class_names,states(simple_episys_uknown));
+
+#system_jacobian(u0vec, pvec, 0.)
 
 
-system_jacobian(u0vec, pvec, 0.)
-
-
-rhs_func = eval(generate_function(simple_epi_system)[1]) ; 
+rhs_func = eval(generate_function(simple_episys_uknown)[1]) ; 
 rhs_func(u0vec, pvec, 0.)
 #incidence(Ei, i::Int) = Ei/S0[i]
 #incidence(t, E, S) = (t, E/S)
