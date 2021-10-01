@@ -25,73 +25,64 @@ adjusted_rtm(t,i,j) = residence_times_matrix2(t+28, i, j)
 @named episys_uknown = epi_model_unknown_input(t, n, m, adjusted_rtm, false)
 @named episys_known = epi_model_known_input(t, n, m, adjusted_rtm, control_pieces)
 
-@variables TRM[1:n, 1:m](t)
+#=
+Initial conditions 
+=#
 
-eqs = [
-    vec([TRM[i,j] ~ residence_times_matrix2(t, i, j) for i in 1:n, j in 1:m]);
-    collect(λ .~ (α .* (TRM* (β .* (TRM' * E) ./ (TRM' * N)))));
-    [D(S[i]) ~ - λ[i] .* S[i] for i in 1:n];
-    [D(E[i]) ~ λ[i] .* S[i] - γₑ * E[i] for i in 1:n];
-    [D(I[i]) ~ γₑ * E[i] - γᵢ * I[i] for i in 1:n]; 
-    [D(R[i]) ~ γᵢ * I[i] for i in 1:n]; 
-    [D(C[i]) ~ γₑ * E[i] for i in 1:n];
-    [D(α[i]) ~ 0. for i in 1:n];
-];
 
-@named epi_system = ODESystem(eqs, t)
-
-# Initial conditions 
 S0 = [infocomunas[comuna].poblacion for comuna in comunas2];
-E0 = 10 * rand(n) .+ 5; # agregué gente random a una comuna random 
+E0 = 10 * rand(n) .+ 20; # agregué gente random a una comuna random 
 I0 = 0.1 * ones(n);
 R0 = 0.1 * ones(n);
 C0 = 0.1 * ones(n);
 # S0 = [1200., 1550.]; E0 = [3.,5.,]; R0 = [0.,0.]; 
 
 total = S0 + E0 + R0
-# Vector de condiciones iniciales 
-u0 = [
-    [α[i] => 0.1 for i in 1:n];
-    [S[i] => S0[i] for i in 1:n]; 
+
+# Structural simplifications to eliminate extra variables 
+simple_episys_known = structural_simplify(episys_known); # to use in kalman filter 
+simple_episys_uknown = structural_simplify(episys_uknown); # to generate synthetic data 
+
+
+# 0132, 135 es mucho
+#=
+#Lo ideal sería que funcionara esto........
+=#
+u0_real = make_x_k(episys_known, S0, E0, I0, R0, C0) 
+#=
+u0_real = [
+    [S[i] => S0[i] for i in 1:n];
     [E[i] => E0[i] for i in 1:n];
-    [I[i] => I0[i] for i in 1:n]; 
+    [I[i] => I0[i] for i in 1:n];
     [R[i] => R0[i] for i in 1:n];
     [C[i] => C0[i] for i in 1:n];
-]; 
+] =#
 
-beta = [1., 5.] # hay que probar qué tan sensible es c/r al segundo valor β₂
+u0 = make_x_uk(episys_uknown, 0.0110, S0, E0, I0, R0, C0)
 
-p = [
-    [γₑ => 1/5., γᵢ => 1/14.]; # midiendo en semanas... un lío con la matrix P 
-    [N[i] => total[i] for i = 1:n];
-    [β[i] => beta[i] for i = 1:m];
-]
+beta_real = [1., 50.]
+beta = [1., 60.] # hay que probar qué tan sensible es c/r al segundo valor β₂
 
-class_names = [
-    [α[i] => "α[$i]" for i in 1:n];
-    [S[i] => "S[$i]" for i in 1:n]; 
-    [E[i] => "E[$i]" for i in 1:n];
-    [I[i] => "I[$i]" for i in 1:n]; 
-    [R[i] => "R[$i]" for i in 1:n];
-    [C[i] => "C[$i]" for i in 1:n];
-]; 
+
+p_real = make_p(episys_known, 1/5.3, 1/8.3, total, beta_real)
+
+
+p = make_p(episys_uknown, 1/5.1, 1/7.2, total, beta) # otros valores 
 
 #=p1 = [
     [γₑ => 1/7]; # midiendo en semanas... un lío con la matrix P 
     [N[i] => total[i] for i = 1:n];
     [β[i] => beta[i] for i = 1:m];
 ]=#
-# Hay que hacer un collect en algún lado! Chriss Rackauckas
 
-simple_epi_system = structural_simplify(epi_system);
+# Synthetic data
+prob_known = ODEProblem(simple_episys_known, u0_real, (0.0,T), p_real);
 
-
-prob = ODEProblem(simple_epi_system, u0, (0.0,400.0), p);
 #prob1 = ODEProblem(simple_epi_system, u0, (0.0,400.0), p1);
 #prob2 = ODEProblem(simple_epi_system, u0, (0.0,400.0), p);
-sol = solve(prob, Tsit5(), saveat = 1.);
-#sol1 = solve(prob);
-#sol1 =  solve(prob1, Tsit5());
+sol = solve(prob_known, Tsit5(), saveat = 1.);
+synthetic_obs = [sol[C[1]] sol[C[2]]];
+
 
 using Plots: plot, plot!
 
