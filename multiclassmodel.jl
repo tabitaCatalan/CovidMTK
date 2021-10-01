@@ -2,6 +2,8 @@
 Inner aux functions of model 
 =#
 
+using ModelingToolkit
+
 function common_dynamics(D, x, p, λ)
     γₑ, γᵢ = p 
     S, E, I, R, C, N = x  
@@ -20,10 +22,11 @@ function environment_contact_rate(t, x, λ, TRM, residence_times_data, α, β)
 
     n,m = size(TRM) 
     S, E, I, R, C, N = x 
+    contact_rate = collect(TRM * collect(β .* (TRM' * E) ./ (TRM' * N)))
     if length(α) == 1 
-        contact_rate = λ .~ α * collect((TRM* (β .* (TRM' * E) ./ (TRM' * N))))
+        contact_rate = λ .~ α * contact_rate
     else 
-        contact_rate = λ .~ (α .* (TRM* (β .* (TRM' * E) ./ (TRM' * N))))
+        contact_rate = λ .~ (α .* contact_rate)
     end 
     [
         vec([TRM[i,j] ~ residence_times_data(t, i, j) for i in 1:n, j in 1:m]); # t + 28 hay que agregarlo en algún lado 
