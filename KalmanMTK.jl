@@ -15,8 +15,9 @@ epi_jacobian(x, α,  p, t) = system_jacobian(x, p, t)
 Condiciones iniciales 
 =# 
 
-u0vec
 dispersion(ν, x) = Diagonal(ν .* x)
+a₀ = 0.0135
+F = (x) -> dispersion(0.1 * ones(length(x)), x)
 
 max_values = [
     make_alpha(simple_episys_uknown, 5e-3);
