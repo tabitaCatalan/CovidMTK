@@ -66,17 +66,17 @@ struct DataMatrix
     Pt::Array{Float64, 3}
 end 
 
-function (dm::DataMatrix)(t::Float64)
-    @view dm.Pt[:,:,calculate_semana(t)]
+function (dm::DataMatrix)(t::Float64, i, j)
+    dm.Pt[i,j,calculate_semana(t)]
 end 
 
 
-dm = DataMatrix(Pt)
+#dm = DataMatrix(Pt)
 dm2 = DataMatrix(Pt2)  
-residence_times_matrix2(t) = dm2(t)
-@time dm(5.); # 0.000008 seconds (1 allocation: 64 bytes)
-residence_times_matrix(t) = dm(t)
-@time residence_times_matrix(5.); # 0.000022 seconds (4 allocations: 976 bytes)
+residence_times_matrix2(t, i, j) = dm2(t, i, j)
+#@time dm(5.); # 0.000008 seconds (1 allocation: 64 bytes)
+#residence_times_matrix(t) = dm(t)
+#@time residence_times_matrix(5.); # 0.000022 seconds (4 allocations: 976 bytes)
 
 #=
 @code_warntype  residence_times_matrix(5.)
