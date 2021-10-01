@@ -94,7 +94,20 @@ lowpass_parameters = ModelingToolkit.varmap_to_vars(
     ,states(simple_episys_uknown)
 );
 
-begin 
+#observaciones = synthetic_obs;
+#using Statistics: 
+
+moving_average(vs,n) = [sum(@view vs[i:(i+n-1)])/n for i in 1:(length(vs)-(n-1))]
+
+conf1 = moving_average(interpolated_prod15[37:end,1],7)
+conf2 = moving_average(interpolated_prod15[37:end,2],7)
+observaciones = [conf1 conf2];
+n_obs = size(observaciones)[1]
+for i in 1:n 
+    global observaciones = [observaciones total[i]*ones(n_obs)]
+end
+
+#=begin 
     rkx = KalmanFilter.RK4Dx(epi_dynamics, epi_jacobian, pvec, dt)
 
     Q = Diagonal(sqrt(dt) * ones(length(u0vec)))
@@ -133,7 +146,7 @@ begin
     =# 
     Pfunc = (x) -> F(x) * F(x)'
     iterator = KalmanFilter.LinearKalmanIterator(u0vec, Pfunc(max_values_vec), nlupdater, observer, system, dt, lowpass_parameters)
-end 
+end =# 
 #=
 Correr todo 
 =#
