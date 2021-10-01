@@ -170,8 +170,14 @@ inicial. Quiero probar dintintos valores iniciales
 para α₀.
 =============================================#
 
-function loss(results, observaciones, rango)
-    sum(abs.(results.analysis[rango, 3:4] - observaciones[rango, :]))
+obs_exp = [C[1], C[2], 
+        [S[i] + E[i] + I[i] + R[i] for i in 1:n]...
+    ]
+H = get_observacion_matrix(obs_exp, simple_episys_uknown)
+
+function loss(analysis, observaciones, rango)
+    #sum(abs.(results.analysis[rango, 3:4] - observaciones[rango, :]))
+    sum(abs.((analysis * H')[rango,:] - observaciones[rango,:]))
 end 
 
 function kalman_iteration(u0, p)
@@ -182,10 +188,6 @@ function kalman_iteration(u0, p)
     Q = Diagonal(sqrt(dt) * ones(length(u0vec)))
     nlupdater = NLUpdater(rkx, x -> F(u0vec), Q, copy(u0vec), 0., 0., x -> SI2(x, total))
     system = KalmanFilter.Measurements(observaciones, dt)
-
-
-    obs_exp = [C[1], C[2]]
-    H = get_observacion_matrix(obs_exp, simple_epi_system)
 
     G = ones(2 * n)
     G[1:n] *= 1000.; G[n+1:2n] *= 10.
