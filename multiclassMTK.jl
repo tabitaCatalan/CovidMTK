@@ -126,10 +126,29 @@ plot!(ts, observaciones[1:length(ts), 2], label = "data C[2]")
 
 rango = 1:2
 
-#a_plot = plot(title = "Incidencias") 
-#[plot!(a_plot, sol[E[i], :] ./ sol[S[i], 1], label = infocomunas[comunas2[i]].nombre) for i in rango]
-#display(a_plot)
 
+#=
+Better plot, shared x-axis 
+=# 
+a_plot = plot(layout=(4,1),framestyle=:box, link = :x, size = (400, 600))
+plot_scnotation!(a_plot, sol, S, 1)
+plot_scnotation!(a_plot, sol, E, 2)
+plot_scnotation!(a_plot, sol, I, 2)
+plot_scnotation!(a_plot, sol, R, 3)
+plot_scnotation!(a_plot, sol, C, 3)
+plot!(ts, control_pieces.(ts), ylabel = "α(t)", subplot = 4, legend=:none, xlabel = "t")
+savefig(folder * "allstates" * make_img_name(p_real) * ".svg")
+
+## mobility 
+plot(100 * datamap[comunas2[1]], ylabel = "% variation w/r to initial mobility", label = "municipality 1")
+plot!(100 * datamap[comunas2[2]], label = "municipality 2", ylims = (0,100), legend = :bottomright)
+savefig(folder * "mobility_$(comunas2[1])_$(comunas2[2]).svg")
+
+a_plot = plot(title = "Incidencias") 
+[plot!(a_plot, sol[E[i], :] ./ sol[S[i], 1], label = "municipality $i") for i in rango]
+display(a_plot)
+savefig(a_plot, folder * "incidence" * make_img_name(p_real) * ".svg")
+ 
 #=
 Jacobian to use with Kalman Filter 
 =#
