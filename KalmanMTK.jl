@@ -28,7 +28,7 @@ max_values = [
     [C[i] => 0.3 * S0[i] for i in 1:n];
 ]; 
 
-max_values_vec = ModelingToolkit.varmap_to_vars(max_values, states(simple_epi_system))
+max_values_vec = ModelingToolkit.varmap_to_vars(max_values, states(simple_episys_uknown))
 
 dt = 1.#0.1 # Intervalo de sampleo de observaciones 
 T = 400. # Se resolverá el problema en el intervalo [0,T]
