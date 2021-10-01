@@ -6,7 +6,8 @@ using CSV
 using TimeSeries
 using DataFrames 
 
-prod15file = "C:\\Users\\Tabita\\Documents\\Covid\\Datos-COVID19-MINSAL\\output\\producto15\\FechaInicioSintomas.csv"
+#prod15file = "C:\\Users\\Tabita\\Documents\\Covid\\Datos-COVID19-MINSAL\\output\\producto15\\FechaInicioSintomas.csv"
+prod15file = "../Datos-COVID19-MINSAL/output/producto15/FechaInicioSintomas.csv"
 dfprod15 = DataFrame(CSV.File(prod15file))
 
 dfprod15RM = filter(row -> ismissing(row["Codigo region"]) ? false : row["Codigo region"] .== 13. , dfprod15)

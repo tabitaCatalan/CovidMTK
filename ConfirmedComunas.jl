@@ -1,12 +1,14 @@
 #=
 Datos comuna 
+C:\\Users\\Tabita\\Documents\\Covid\\Datos-COVID19-MINSAL\\output\\producto15\\FechaInicioSintomas.csv
 =#
 
 using CSV 
 using TimeSeries
 using DataFrames 
 
-confirmedfile = "..\\Datos-COVID19-MINSAL\\output\\producto6\\bulk\\data.csv" 
+#confirmedfile = "..\\Datos-COVID19-MINSAL\\output\\producto6\\bulk\\data.csv" 
+confirmedfile = "../Datos-COVID19-MINSAL/output/producto6/bulk/data.csv" 
 dfconfirmed = DataFrame(CSV.File(confirmedfile))
 
 names(dfconfirmed)
