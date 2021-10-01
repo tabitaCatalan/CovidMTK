@@ -2,17 +2,28 @@ using ModelingToolkit, OrdinaryDiffEq
 using Plots: plot, plot!
 
 
-n = 2 #length(comunas) # number of classes 
+n = length(comunas2) # number of classes 
 m = 2 # number of environments 
 
-@parameters t γₑ γᵢ β[1:m] N[1:n]
-@variables α[1:n](t) S[1:n](t) E[1:n](t) λ[1:n](t) I[1:n](t) R[1:n](t) C[1:n](t)
-
-
+# register data functions 
+@variables t 
+@register control_pieces(t)
+@register residence_times_matrix2(t, i, j)
+@parameters γₑ γᵢ β[1:m] N[1:n]
+@variables S[1:n](t) E[1:n](t) I[1:n](t) R[1:n](t) C[1:n](t) λ[1:n](t)
+@variables TRM[1:n, 1:m](t)
 D = Differential(t) 
+#= +28 ... para ajustar los tiempos
+mobility data starts 2020-03-02 (epi-week 9)
+and confirmed data starts on 2020-03-30 
+confirmed prod 15 starts 2020-02-22 
+#semana_to_lastday(1) + Day(37)
+=#
+adjusted_rtm(t,i,j) = residence_times_matrix2(t+28, i, j)
 
-@variables i j 
-@register residence_times_matrix2(t, i, j)#::Array{Float64,2}
+# epi_model_unknown_input y epi_model_known_input están definidas en multiclass_model.jl 
+@named episys_uknown = epi_model_unknown_input(t, n, m, adjusted_rtm, false)
+@named episys_known = epi_model_known_input(t, n, m, adjusted_rtm, control_pieces)
 
 @variables TRM[1:n, 1:m](t)
 
