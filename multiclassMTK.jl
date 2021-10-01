@@ -84,17 +84,41 @@ sol = solve(prob_known, Tsit5(), saveat = 1.);
 synthetic_obs = [sol[C[1]] sol[C[2]]];
 
 
-using Plots: plot, plot!
+using Plots: plot, plot!, savefig
 
-plot(sol, vars = (t, E), legend =:none)
-plot(sol, vars = (t, S), legend =:none)
+folder = "img/"
+#=
+plot(ts, control_pieces.(ts), )
+savefig(folder * "control" * make_img_name(p_real) * ".svg")
+
+plot(sol, vars = (t, E), title = "Exposed", ylabel = "people")
+savefig(folder * "exposed" * make_img_name(p_real) * ".svg")
+plot!(sol, vars = (t, I), title = "Infected and Exposed", ylabel = "people")
+savefig(folder * "infected" * make_img_name(p_real) * ".svg")
+plot(sol, vars = (t, S), title = "Susceptibles", ylabel = "people")#, ylim = (0,3.4e5))
+savefig(folder * "susceptibles" * make_img_name(p_real) * ".svg")
+plot(sol, vars = (t, R), title = "Recovered", ylabel = "people")
+savefig(folder * "recovered" * make_img_name(p_real) * ".svg")
+
+plot!(sol, vars = (t, C), title = "Cumulated", ylabel = "people")
+savefig(folder * "cumulated" * make_img_name(p_real) * ".svg")
+=#
+#=
+a_plot = plot(sol, vars = (t, C))
+plot!(a_plot, ts, observaciones[1:length(ts), 1], label = "data C[1]")
+plot!(a_plot, ts, observaciones[1:length(ts), 2], label = "data C[2]")
+display(a_plot)
+
+plot(ts, observaciones[1:length(ts), 1], label = "data C[1]", yscale = :log10)
+plot(sol, vars = (t, C), title = "Cumulated cases")
+
+plot(ts, observaciones[1:length(ts), 1], label = "data C[1]")
+plot!(ts, observaciones[1:length(ts), 2], label = "data C[2]")
+
 #plot(sol1, vars = (t, E), legend =:none)
 #plot(sol, vars = (incidence, t, E, S), legend =:none)
-
+=#
 #indexes(i) = ((i-1)*n + 1):(i*n)
-indexes(3) # 1 = S, 2 = E, 3 = R 
-
-ts = 0.:1.:300.
 
 #solution(t, i) = sol(t)[indexes(i)]
 
