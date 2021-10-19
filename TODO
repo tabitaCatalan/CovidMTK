@@ -8,7 +8,7 @@ Artículo:
     Resultados: 
         Parte 1 - Modelo con matriz de tiempos de residencia:
             Esto debo hacerlo sí o sí 
-            ☐ Resultados de la matriz (la imagen bonita). 
+            ☐ Resultados de la matriz (la imagen bonita).
             Hay que ir organizando el código en un repo. Todo debería quedar con un `runall.m`. 
             ☐ Correr modelo con las 18 clases, casos simples, ver que da cosas con sentido. 
         Parte 2 - Ajuste de parámetros: 
@@ -52,12 +52,69 @@ Código:
 Gráficos: 
     Hay varios gráficos que me interesa hacer. 
     Estimaciones de susceptibilidad por comuna 
-    Cantidad de personas susceptibles por comuna 
+    ✔ Porcentajes de susceptibles por comuna @done(21-10-02 16:00)
     Qué tanto afectaron las vacunas
     Qué habría pasado en un escenario sin vacunas 
-    Usar IPS para pintar las comunas.
+    IPS: 
+        ✔ Actualizar InfoComunas con IPS de cada comuna. @done(21-10-04 08:45)
+        ✔ Usar IPS para pintar las comunas. @done(21-10-04 08:50)
+        ☐ Cambiar paleta de colores 
+        ☐ Cambiar el color de los ribbons de manera adecuada
     ✘ Aprender a usar Makie.jl @cancelled(21-10-01 12:36)
 
     ☐ Forma rápida de obtener todos los resultados 
-    ☐ Agregar fechas 
-    ☐ Qué tanta variación hay con respecto a considerar los tiempos de residencia iniciales (obtenidos con la EOD2012).
+    Fechas: 
+        ✔ Agregar fechas @started(21-10-04 08:50) @done(21-10-04 08:56) @lasted(6m49s)
+        ✔ Encontrar `t0date` @started(21-10-04 08:58) @done(21-10-04 09:04) @lasted(6m33s)
+        ☐ No usar fecha de confirmed data como inicial 
+    Grey plots: 
+        ✔ Plots destacando ciertas comunas, todas las demás en gris @done(21-10-11 18:18)
+    ☐ Qué tanta variación hay con respecto a considerar los tiempos de residencia iniciales (obtenidos con la EOD2012). 
+    ☐ Sensibilidad c/r a los parámetros 
+Optimización del código:     
+    ✔ Usar sparse jacobian @done(21-10-10 10:15)
+    ✘ La idea es poder usar mi código con 50 comunas (unas 300 variables). @cancelled(21-10-10 10:15)
+
+Notas de la reunión 05-10-2021:
+    
+☐ Trabajar con un alpha(t) y los demás son ponderadores 
+QUé da con alpha(t) y con alpha indeps.... 
+☐ La idea sería tener un resultado robusto, dar 3 o 4 comunas y que dé un resultado razonable.
+☐ Tratar de recordar las hipótesis del modelos, para el artículo hay que hacer otra cosa o está bien así? Recordar, escribir bonito. 
+
+☐ Vamos a incorporar otros parámetros desconocidos para el filtro, más inputs que estimar? Cuáles? 
+    parámetros estructurales clásicos, gamma, \phi, esos valores son más o menos conocidos de la investigación. 
+    Opción b, estimar parámetros que aparezcan en eq (2),... se podrían estimar p_e, p_i? 
+    
+Condiciones iniciales... se ajusta a l
+
+Agregar nivel socioeconómico? 
+- alpha por edad 
+
+r: hogar, trabajo, estudios, otros. 
+Con eso se pueden hacer experimentos... 
+Qué pasa si el riesgo se va a 0 en los colegios, etc. 
+
+Podría agregar comuna y edad, y si eso efunciona tal vez agregar más.... 
+
+Filtro para 3 comunas y que funcione 
+
+1. Filtro para edad y que funcione 
+Al agregar que el \alpha dependa de un factor 
+
+Para los datos por edad hay que preguntar a pedro... 
+Juntar comunas, agrupar niveles.... 
+
+Siempre se puede suponer que la distribución por edad es la misma en todas las comunas 
+
+Tal vez se podría hablar con Carla para eso, desagregar los datos por nivel socioeconómicos y edad. Para que sea lo definitivo, el experimento final.  
+
+
+Paso 2, enriquecer la matriz R, con más ambientes. 
+
+
+Echar a andar el filtro, contarle al profe qué funciona y qué no. 
+
+
+
+☐ Meter la construcción de Pt a un constructor externo de DataMatrix, hacer uno para varias comunas y varios grupos 

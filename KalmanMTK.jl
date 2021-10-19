@@ -1,6 +1,7 @@
 using KalmanFilter
 using LinearAlgebra: Diagonal
 using StaticArrays
+using SparseArrays
 
 #= 
 Dinámica del sistema 
@@ -22,10 +23,10 @@ F = (x) -> dispersion(0.1 * ones(length(x)), x)
 max_values = [
     make_alpha(simple_episys_uknown, 5e-3);
     [S[i] => S0[i] for i in 1:n]; 
-    [E[i] => 0.3 * S0[i] for i in 1:n];
-    [I[i] => 0.3 * S0[i] for i in 1:n]; 
-    [R[i] => 0.3 * S0[i] for i in 1:n];
-    [C[i] => 0.3 * S0[i] for i in 1:n];
+    [E[i] => 0.07 * S0[i] for i in 1:n];
+    [I[i] => 0.07 * S0[i] for i in 1:n]; 
+    [R[i] => 0.07 * S0[i] for i in 1:n];
+    [C[i] => 0.07 * S0[i] for i in 1:n];
 ]; 
 
 max_values_vec = ModelingToolkit.varmap_to_vars(max_values, states(simple_episys_uknown))
@@ -75,7 +76,7 @@ indexR = getstateindexs(R, simple_episys_uknown)
 SI2 = StateIntegrity(SVector{n}(indexS), SVector{n}(indexE), SVector{n}(indexR))
 
 #@time SI1(u0vec, total);
-@time SI2(u0vec, total);
+#@time SI2(u0vec, total);
 
 observation_integrity(x) = max.(x,0.)
 
@@ -83,13 +84,13 @@ observation_integrity(x) = max.(x,0.)
 
 lowpass_parameters = ModelingToolkit.varmap_to_vars(
     [
-        [S[i] => 0.8 for i in 1:n]; 
-        [E[i] => 0.8 for i in 1:n]; 
-        [R[i] => 0.8 for i in 1:n]; 
-        [I[i] => 0.8 for i in 1:n]; 
-        [C[i] => 0.8 for i in 1:n]; 
+        [S[i] => 1. for i in 1:n]; 
+        [E[i] => 1. for i in 1:n]; 
+        [R[i] => 1. for i in 1:n]; 
+        [I[i] => 1. for i in 1:n]; 
+        [C[i] => 1. for i in 1:n]; 
         #[α[i] => 1. for i in 1:n];
-        make_alpha(simple_episys_uknown, 1.)
+        make_alpha(simple_episys_uknown, lowpass_alpha)
         ]
     ,states(simple_episys_uknown)
 );
@@ -97,15 +98,9 @@ lowpass_parameters = ModelingToolkit.varmap_to_vars(
 #observaciones = synthetic_obs;
 #using Statistics: 
 
-moving_average(vs,n) = [sum(@view vs[i:(i+n-1)])/n for i in 1:(length(vs)-(n-1))]
+#moving_average(vs,n) = [sum(@view vs[i:(i+n-1)])/n for i in 1:(lenght(vs)-(n-1))]
+moving_average(vs,n) = [sum((@view vs[i:(i+n-1), j]))/n for i in 1:(size(vs)[1]-(n-1)), j in 1:size(vs)[2]]
 
-conf1 = moving_average(interpolated_prod15[37:end,1],7)
-conf2 = moving_average(interpolated_prod15[37:end,2],7)
-observaciones = [conf1 conf2];
-n_obs = size(observaciones)[1]
-for i in 1:n 
-    global observaciones = [observaciones total[i]*ones(n_obs)]
-end
 
 #=begin 
     rkx = KalmanFilter.RK4Dx(epi_dynamics, epi_jacobian, pvec, dt)
@@ -118,7 +113,7 @@ end
 
     #=
     Observaciones 
-    =#
+    =
     interpolated_data = interpolate_data(confirmedmap[comunas[1]])
 
     observaciones = Array{Float64, 2}(undef, length(interpolated_data), length(comunas2) + n)
@@ -170,11 +165,11 @@ inicial. Quiero probar dintintos valores iniciales
 para α₀.
 =============================================#
 
-obs_exp = [C[1], C[2], 
+obs_exp = [[C[i] for i in 1:n]..., 
         [S[i] + E[i] + I[i] + R[i] for i in 1:n]...
     ]
 H = get_observacion_matrix(obs_exp, simple_episys_uknown)
-
+H = SparseMatrixCSC(H)
 function loss(analysis, observaciones, rango)
     #sum(abs.(results.analysis[rango, 3:4] - observaciones[rango, :]))
     sum(abs.((analysis * H')[rango,:] - observaciones[rango,:]))
@@ -219,16 +214,40 @@ function initial_u0(a0)
     ];
 end 
 
-function loss_from_alpha0(a0, rango = 1:100)
-    u0 = initial_u0(a0)    
-    results = kalman_iteration(u0, p)
-    
-    println("")
-    loss(results, observaciones, rango)
+
+function create_p(x)
+    @inbounds a0, beta2, gamma_e, gamma_i = x
+    p = [
+            γₑ => gamma_e, 
+            γᵢ => gamma_i, 
+            [N[i] => total[i] for i = 1:n]...,
+            β[1] => 1.0, 
+            β[2] => beta2
+        #[γₑ => 1/5.3, γᵢ => 1/9]; # midiendo en semanas... un lío con la matrix P 
+        #[γₑ => 1/5.1, γᵢ => 1/8]; # midiendo en semanas... un lío con la matrix P 
+    ]
+    p
 end 
 
 
-results, xs, Ps = kalman_iteration(initial_u0(a₀), p)
+function loss_from_alpha0(a0, p, rango = 1:100)
+    u0 = initial_u0(a0)    
+    results, xs, Ps = kalman_iteration(u0, p)
+    
+    println("")
+    #loss(results.analysis, observaciones, rango)
+    loss(xs, observaciones, rango)
+end 
+
+
+#loss_from_alpha0(a₀, p_real, 1:400)
+#loss_from_alpha0(a₀, create_p([0.016728510433320562, 34.87213978597166,  0.1451405896110646,  0.16229284534863325]), 1:400)
+
+
+#@enter kalman_iteration(initial_u0(a₀), p);
+#results, xs, Ps = kalman_iteration(initial_u0(best_candidate(opt)[1]), create_p(best_candidate(opt)));
+#run kalman_iteration(initial_u0(a₀), p)
+
 #@run kalman_iteration(initial_u0(a₀), p)
 
 #= 
@@ -238,15 +257,82 @@ a0s = 1e-7:1e-7:1e-6
 loss_from_alpha0(1e-10) 
 
 losses_a0s = loss_from_alpha0.(a0s)  
-plot(a0s, losses_a0s)
+=#
+#using Plots: scatter, scatter!
+#scatter(a0s, losses_a0s)
 
 #============================================
 Plotting 
 =============================================#
 
-rango = 1:length(ts)
+# Agregar un campo opcional con nombres
+# (por defecto es el nombre de las mismas variables)
 
-using Plots: plot, plot!
+
+#=plot_smoothed!(a_plot, ts, xs, 1., i, subplot = state) # 10^5 
+#plot_smoothed!(a_plot, ts, xs, 1., 2, 1)
+#plot_scnotation!(a_plot, sol, S, 1)
+
+plot_smoothed!(a_plot, ts, xs, 1., n + i, ) # 10^2
+#plot_smoothed!(a_plot, ts, xs, 1., 4, 2)
+#plot_scnotation!(a_plot, sol, E, 2)
+
+plot_smoothed!(a_plot, ts, xs, 1., 2n + i, 3) # 10^2
+#plot_smoothed!(a_plot, ts, xs, 1., 6, 3)
+#plot_scnotation!(a_plot, sol, I, 3)
+
+plot_smoothed!(a_plot, ts, xs, 1., 3n + i, 4) # 10^4
+#plot_smoothed!(a_plot, ts, xs, 1., 8, 4)
+#plot_scnotation!(a_plot, sol, R, 4)
+
+plot_smoothed!(a_plot, ts, xs, 1., 4n + i, 5) # 10{4}
+#plot_smoothed!(a_plot, ts, xs, 1., 10, 5)
+#plot_scnotation!(a_plot, sol, C, 5)
+
+plot_smoothed!(a_plot, ts, xs, 1., 5n + i, 6) # 1
+#plot_smoothed!(a_plot, ts, xs, 1., 12, 6) # 1 =#
+
+#plot!(ts, control_pieces.(ts), ylabel = "α(t)", subplot = 6, legend=:none, xlabel = "t")
+#savefig(folder * "kalmana_llstates" * make_img_name(p_real) * ".svg")
+
+
+#plot!(ts, xs[:,i]./total[i], ribbon = sqrt.(Ps[i,i,:])./total[i])
+
+#=
+plot(results, ts, 1)
+plot(results, ts, 1, ylims = (0.,1.9e5), title = "Susceptibles")
+
+plot!(sol, vars = (t,S))
+
+plot(results, ts, 3, title = "Expuestos")
+plot!(results, ts, 4)
+
+plot!(ts, xs[:,4], label = "s2")
+plot!(sol, vars = (t,E))
+
+plot(results, ts, 5, title = "Infectados")
+plot!(results, ts, 6)
+plot!(sol, vars = (t,I))
+
+plot(results, ts, 7, title = "Recuperados")
+plot!(results, ts, 8) 
+plot!(sol, vars = (t,R))
+
+plot(results, ts, 9, title = "Acumulados")
+plot!(results, ts, 10)
+plot!(sol, vars = (t,C))
+plot!(ts, xs[:,9], label = "sC1")
+plot!(ts, xs[:,10], label = "sC2")
+plot!(ts, observaciones[rango, 1], label = "C[1] obs") =#
+#plot!(ts, observaciones[rango, 2], label = "C[2] obs") 
+
+#plot(results, ts, 11, title = "Tasa de contagios")
+#plot!(results, ts,12) 
+#plot!(ts, xs[:,11], label = "sα1")
+#plot!(ts, xs[:,12], label = "sα2")
+#plot!(ts, control_pieces.(ts))
+
+#=
 find_in_states(sym, system) = findfirst(isequal(sym),states(system))
 
 function result_dic(analysis, system) 
@@ -257,8 +343,9 @@ end
 function vec_from_dic(dic, system)
     hcat(ModelingToolkit.varmap_to_vars(dic, states(system))...)'
 end 
+=#
 
-
+#=
 """
 - `sym_expression`: using variables from states(system). 
 - `ordered_results`: an 2d array 
@@ -281,6 +368,55 @@ function eval_expression(sym_expression, ordered_results, system)
     evaluated_array
 end 
 
-total_class_1 = eval_expression(S[1] + E[1] + R[1] + I[1], vec_from_dic(dict, simple_epi_system), simple_epi_system)
+function evaluate_expression_in_analysis(exp, analysis, system)
+    dict = result_dic(analysis, system)
+    eval_expression(exp, vec_from_dic(dict, system), system)
+end 
 
-plot(ts, total_class_1)
+total_class_1 = evaluate_expression_in_analysis(S[1] + E[1] + R[1] + I[1], results.analysis, simple_episys_uknown);
+total_class_1_rts = evaluate_expression_in_analysis(S[1] + E[1] + R[1] + I[1], xs, simple_episys_uknown);
+
+plot(ts, total_class_1, ylims = (136300.,136450.))
+plot!(ts, total_class_1_rts, label = "rts")
+=#
+#=
+plot(results, ts, 3, title = "Expuestos")
+plot!(ts, xs[:,3])
+
+plot(results, ts, 1, title = "Susceptibles")
+plot!(ts, xs[:,1])
+
+plot(results, ts, 5, title = "Infected")
+plot!(ts, xs[:,5])
+
+plot(results, ts, 7, title = "Recovered")
+plot!(ts, xs[:,7])
+
+plot(results, ts, 9, title = "Cumulated")
+plot!(ts, xs[:,9])
+
+
+plot(results, ts, 11, title = "Control")
+plot!(ts, xs[:,11])
+
+=#
+
+#=
+if i == 6
+        @series begin
+            seriestype := :path
+            label --> "Observaciones"
+            rango_ts = (rango[1]+1):rango[end]
+            rango_obs = rango[1]:(rango[end]-1)
+            ts[rango_ts], r.observations[rango_obs]
+        end
+    end
+=#
+
+#=
+En el caso sintético se obtienen buenos resultados!
+Creo que necesito corregir los casos acumulados... están dando problema...
+supongo que ese salto raro al cambiar las mediciones. 
+Si logro hacer optimización de parámetros... podría funcionar, es claro que 
+estos parámetros no son los mejores, el forzante creo que apaña a eso. 
+=#

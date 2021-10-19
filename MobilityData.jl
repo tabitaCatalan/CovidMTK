@@ -6,18 +6,57 @@ using CSV
 using DataFrames
 using TimeSeries 
 
-mobfile = "../Datos-COVID19-MINSAL/output/producto82/ISCI_weeks.csv" 
+#============================================================================
+Definición de funciones para procesar los datos 
+============================================================================# 
 
-dfsalidas = DataFrame(CSV.File(mobfile))
+"""
+    process_mob_csv(file)
+Devuelve un Vector con los códigos de las comunas de Santiago y un diccionario asociando 
+cada código a su respectiva movilidad.
+- `file`: path al archivo de datos de mobilidad (producto 82)
+```
+julia> comunas
+51-element Vector{Int64}:
+ 13111
+     ⋮
+ 13112
+ julia> datamap
+ Dict{Int64, Vector{Float64}} with 51 entries:
+   13111 => [0.992765, 1.00055,  …  0.871758, 0.877422, 0.897… 
+   13503 => [0.990494, 0.992677,  …  0.892761, 1.00352, 0.9580…  
+   ⋮     => ⋮
+```
+"""
+function process_mob_csv(file)
+    dfsalidas = DataFrame(CSV.File(mobfile))
 
-dfsalidasRM = filter(row -> row.region == 13, dfsalidas)
+    dfsalidasRM = filter(row -> row.region == 13, dfsalidas)
 
-comunas = unique(dfsalidasRM.comuna)
-get_salidas(comuna) = filter(row -> row.comuna == comuna, dfsalidasRM).var_salidas  
+    comunas = unique(dfsalidasRM.comuna)
+    get_salidas(comuna) = filter(row -> row.comuna == comuna, dfsalidasRM).var_salidas  
 
-datamap = Dict(
-    comuna => get_salidas(comuna) for comuna in comunas  
-) 
+    datamap = Dict(
+        comuna => get_salidas(comuna) for comuna in comunas  
+    ) 
+    comunas, datamap
+end 
+
+
+make_initial_homogeneous_mob(initial_frac_home_time, number_of_comunas) = initial_frac_home_time * ones(number_of_comunas)
+
+"""
+    make_mob_in_time(comunas)
+Construye una matriz de mobilidad semanal para todas las comunas elegidas 
+- `comunas::Array{Int}` lista de códigos de las comunas 
+"""
+function make_mob_in_time(selected_comunas, datamap)
+    mob_in_time = Array{Float64, 2}(undef, length(selected_comunas), length(datamap[selected_comunas[1]]))
+    for (i,comuna) in enumerate(selected_comunas)
+        mob_in_time[i, :] .= datamap[comuna]
+    end 
+    mob_in_time 
+end 
 
 """
 Devuelve una matriz de tiempos de residencia que depende del tiempo 
@@ -35,31 +74,8 @@ function makePmatrix(initial_mob, mob_in_time)
     Pt  
 end  
 
-comunas = collect(keys(datamap))
-initial_mob = 0.5 * ones(length(comunas));# get data para esto 
-
-# estoy pensando que esto debería ir al revés... tiempo pal lado 
-#=
-mob_in_time = Array{Float64, 2}(undef, length(comunas), length(datamap[comunas[1]]))
-for (i,comuna) in enumerate(comunas)
-    mob_in_time[i, :] = datamap[comuna]
-end 
-mob_in_time 
-=#
-comunas2 = rand(comunas, 5)
-#comunas2 = [13401, 13114] # san bernardo y las condes
-mob_in_time2 = Array{Float64, 2}(undef, length(comunas2), length(datamap[comunas[1]]))
-for (i,comuna) in enumerate(comunas2)
-    mob_in_time2[i, :] = datamap[comuna]
-end 
-mob_in_time2 
-
-#Pt = makePmatrix(initial_mob, mob_in_time);
-Pt2 = makePmatrix(0.5 * ones(length(comunas2)), mob_in_time2);
 calculate_semana(t) = floor(Int, t/7) + 1
-#index(t) = floor(Int, t) + 1
 
-#copyPt = copy(Pt); 
 struct DataMatrix
     """
     3d-matrix of dimensions (ncomunas, 2, nsemanas)."""
@@ -71,14 +87,31 @@ function (dm::DataMatrix)(t::Float64, i, j)
 end 
 
 
-#dm = DataMatrix(Pt)
-dm2 = DataMatrix(Pt2)  
-residence_times_matrix2(t, i, j) = dm2(t, i, j)
+#============================================================================
+Ejecutar las funciones 
+============================================================================# 
+
+if Sys.islinux()
+    mobfile = "../Datos-COVID19-MINSAL/output/producto82/ISCI_weeks.csv" 
+else 
+    mobfile = "..\\Datos-COVID19-MINSAL\\output\\producto82\\ISCI_weeks.csv"
+end
+
+comunas, datamap = process_mob_csv(mobfile) 
+
+try
+    # Si es que initial_data_mob está definido, usarlo. S
+    global initial_mob = initial_data_mob 
+catch # si no está definido, usar mobilidad inicial homogenea
+    global initial_mob = make_initial_homogeneous_mob(initial_frac_home_time, length(comunas2))
+end 
+
+
 #@time dm(5.); # 0.000008 seconds (1 allocation: 64 bytes)
 #residence_times_matrix(t) = dm(t)
 #@time residence_times_matrix(5.); # 0.000022 seconds (4 allocations: 976 bytes)
 
-#=
+#= código para ubicar dónde se están haciendo allocations, qué hace que la función demore 
 @code_warntype  residence_times_matrix(5.)
 @code_warntype makePmatrix(initial_mob, mob_in_time)
 

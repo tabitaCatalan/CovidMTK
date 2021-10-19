@@ -22,7 +22,7 @@ function environment_contact_rate(t, x, λ, TRM, residence_times_data, α, β)
 
     n,m = size(TRM) 
     S, E, I, R, C, N = x 
-    contact_rate = collect(TRM * collect(β .* (TRM' * E) ./ (TRM' * N)))
+    contact_rate = collect(TRM * collect(β .* (TRM' * I) ./ (TRM' * N)))
     if length(α) == 1 
         contact_rate = λ .~ α * contact_rate
     else 

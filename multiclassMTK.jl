@@ -1,4 +1,5 @@
-using ModelingToolkit, OrdinaryDiffEq
+using ModelingToolkit
+using OrdinaryDiffEq
 using Plots: plot, plot!
 
 
@@ -8,10 +9,10 @@ m = 2 # number of environments
 # register data functions 
 @variables t 
 @register control_pieces(t)
-@register residence_times_matrix2(t, i, j)
+@register residence_times_matrix(t, i, j)
 @parameters γₑ γᵢ β[1:m] N[1:n]
 @variables S[1:n](t) E[1:n](t) I[1:n](t) R[1:n](t) C[1:n](t) λ[1:n](t)
-@variables TRM[1:n, 1:m](t)
+#@variables TRM[1:n, 1:m](t)
 D = Differential(t) 
 #= +28 ... para ajustar los tiempos
 mobility data starts 2020-03-02 (epi-week 9)
@@ -19,10 +20,10 @@ and confirmed data starts on 2020-03-30
 confirmed prod 15 starts 2020-02-22 
 #semana_to_lastday(1) + Day(37)
 =#
-adjusted_rtm(t,i,j) = residence_times_matrix2(t+28, i, j)
+adjusted_rtm(t,i,j) = residence_times_matrix(t+28, i, j)
 
 # epi_model_unknown_input y epi_model_known_input están definidas en multiclass_model.jl 
-@named episys_uknown = epi_model_unknown_input(t, n, m, adjusted_rtm, false)
+@named episys_uknown = epi_model_unknown_input(t, n, m, adjusted_rtm, one_control)
 @named episys_known = epi_model_known_input(t, n, m, adjusted_rtm, control_pieces)
 
 #=
@@ -61,7 +62,7 @@ u0_real = [
 u0 = make_x_uk(episys_uknown, 0.0110, S0, E0, I0, R0, C0)
 
 beta_real = [1., 50.]
-beta = [1., 60.] # hay que probar qué tan sensible es c/r al segundo valor β₂
+beta = [1., beta_exterior] # hay que probar qué tan sensible es c/r al segundo valor β₂
 
 
 p_real = make_p(episys_known, 1/5.3, 1/8.3, total, beta_real)
@@ -76,12 +77,12 @@ p = make_p(episys_uknown, 1/5.1, 1/7.2, total, beta) # otros valores
 ]=#
 
 # Synthetic data
-prob_known = ODEProblem(simple_episys_known, u0_real, (0.0,T), p_real);
+#prob_known = ODEProblem(simple_episys_known, u0_real, (0.0,T), p_real, jac = true, sparse = true);
 
 #prob1 = ODEProblem(simple_epi_system, u0, (0.0,400.0), p1);
 #prob2 = ODEProblem(simple_epi_system, u0, (0.0,400.0), p);
-sol = solve(prob_known, Tsit5(), saveat = 1.);
-synthetic_obs = [sol[C[1]] sol[C[2]]];
+#sol = solve(prob_known, Tsit5(), saveat = 1.);
+#synthetic_obs = [sol[C[1]] sol[C[2]]];
 
 
 using Plots: plot, plot!, savefig
@@ -129,7 +130,7 @@ rango = 1:2
 
 #=
 Better plot, shared x-axis 
-=# 
+
 a_plot = plot(layout=(4,1),framestyle=:box, link = :x, size = (400, 600))
 plot_scnotation!(a_plot, sol, S, 1)
 plot_scnotation!(a_plot, sol, E, 2)
@@ -148,22 +149,26 @@ a_plot = plot(title = "Incidencias")
 [plot!(a_plot, sol[E[i], :] ./ sol[S[i], 1], label = "municipality $i") for i in rango]
 display(a_plot)
 savefig(a_plot, folder * "incidence" * make_img_name(p_real) * ".svg")
- 
+=# 
 #=
 Jacobian to use with Kalman Filter 
 =#
 
 
-jac = generate_jacobian(simple_episys_uknown); # esto debería ser la función que devuelve el jacobiano 
+jac2 = generate_jacobian(simple_episys_uknown, sparse = true); # esto debería ser la función que devuelve el jacobiano 
+#jac = generate_jacobian(simple_episys_uknown); # esto debería ser la función que devuelve el jacobiano 
 
-system_jacobian = eval(jac[1]);
+#jac2 = generate_jacobian(simple_episys_uknown, sparse = true); # esto debería ser la función que devuelve el jacobiano 
+system_jacobian = eval(jac2[1]);
 
+#jac2 = calculate_jacobian(simple_episys_uknown, sparse = true); # esto debería ser la función que devuelve el jacobiano 
+#jac1 = calculate_jacobian(simple_episys_uknown);
 pvec = ModelingToolkit.varmap_to_vars(p,parameters(simple_episys_uknown));
 u0vec = ModelingToolkit.varmap_to_vars(u0,states(simple_episys_uknown));
 #class_names_vec = ModelingToolkit.varmap_to_vars(class_names,states(simple_episys_uknown));
 
 #system_jacobian(u0vec, pvec, 0.)
-
+#build_function(jac1, states(simple_episys_known));
 
 rhs_func = eval(generate_function(simple_episys_uknown)[1]) ; 
 rhs_func(u0vec, pvec, 0.)
