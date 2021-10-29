@@ -640,11 +640,11 @@ version = "0.8.21"
 
 [[KalmanFilter]]
 deps = ["ComponentArrays", "DifferentialEquations", "Distributions", "DocStringExtensions", "GaussianFilters", "LinearAlgebra", "Random", "RecipesBase", "Revise", "Statistics", "Symbolics"]
-git-tree-sha1 = "cf93c6a745de227f0eec1993c9af87eaa0a52338"
-repo-rev = "main"
-repo-url = "https://github.com/tabitaCatalan/kalman"
+git-tree-sha1 = "95b112bdb7831d229eaabf92ddcbf183330dc2b5"
+repo-rev = "5-hacer-funcional-ukf"
+repo-url = "https://github.com/tabitaCatalan/kalman/"
 uuid = "029cf172-920f-439e-9720-f85cfe1b76b6"
-version = "0.10.0"
+version = "0.10.1"
 
 [[LAME_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
