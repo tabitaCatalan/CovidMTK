@@ -21,10 +21,10 @@ a₀ = 0.0135
 F = (x) -> dispersion(0.1 * ones(length(x)), x)
 
 max_values = [
-    make_alpha(simple_episys_uknown, 5e-3);
-    [S[i] => S0[i] for i in 1:n]; 
+    make_alpha(simple_episys_uknown, 8e-2);
+    [S[i] => 0.1 * S0[i] for i in 1:n]; 
     [E[i] => 0.07 * S0[i] for i in 1:n];
-    [I[i] => 0.07 * S0[i] for i in 1:n]; 
+    [I[i] => 0.005 * S0[i] for i in 1:n]; 
     [R[i] => 0.07 * S0[i] for i in 1:n];
     [C[i] => 0.07 * S0[i] for i in 1:n];
 ]; 
