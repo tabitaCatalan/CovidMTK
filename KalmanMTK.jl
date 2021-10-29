@@ -98,8 +98,6 @@ lowpass_parameters = ModelingToolkit.varmap_to_vars(
 #observaciones = synthetic_obs;
 #using Statistics: 
 
-#moving_average(vs,n) = [sum(@view vs[i:(i+n-1)])/n for i in 1:(lenght(vs)-(n-1))]
-moving_average(vs,n) = [sum((@view vs[i:(i+n-1), j]))/n for i in 1:(size(vs)[1]-(n-1)), j in 1:size(vs)[2]]
 
 
 #=begin 
@@ -178,9 +176,25 @@ end
 function kalman_iteration(u0, p)
     u0vec = ModelingToolkit.varmap_to_vars(u0,states(simple_episys_uknown));
     pvec = ModelingToolkit.varmap_to_vars(p,parameters(simple_episys_uknown));
-    rkx = KalmanFilter.RK4Dx(epi_dynamics, epi_jacobian, pvec, dt)
+    
+
+    #n_steps = 1
+    #small_dt = dt/n_steps
+    #Q = Diagonal(sqrt(small_dt) * ones(length(u0vec)))
+
+    #UM = KalmanFilter.UMomentum(epi_dynamics, Q, x -> F(u0vec))
+
+    #EM = KalmanFilter.ExtendedMomentum(epi_dynamics, epi_jacobian, x -> F(u0vec), Q)
+
+    Pfunc = (x) -> F(x) * F(x)'
+    #nlupdater = KalmanFilter.ODEForecaster(dt, n_steps, u0vec,
+    #                                        Pfunc(u0vec),
+    #                                        pvec, 
+    #                                        x -> SI2(x, total), 
+    #                                        UM)
 
     Q = Diagonal(sqrt(dt) * ones(length(u0vec)))
+    rkx = KalmanFilter.RK4Dx(epi_dynamics, epi_jacobian, pvec, dt)
     nlupdater = NLUpdater(rkx, x -> F(u0vec), Q, copy(u0vec), 0., 0., x -> SI2(x, total))
     system = KalmanFilter.Measurements(observaciones, dt)
 
@@ -192,13 +206,17 @@ function kalman_iteration(u0, p)
     #=
     Iterator y matriz de covarianzas inicial 
     =# 
-    Pfunc = (x) -> F(x) * F(x)'
+    
     iterator = KalmanFilter.LinearKalmanIterator(u0vec, Pfunc(max_values_vec), nlupdater, observer, system, dt, lowpass_parameters) 
 
-    #results, ensamble = KalmanFilter.full_iteration(iterator, dt, Nmediciones, t -> 0., 1) 
+    #results, ensamble = KalmanFilter.full_iteration(iterator, dt, Nmediciones, t -> 0., 1, obscheck = false) 
     
     results, ensamble, Pnp1n_matrixs, Pnn_matrixs, Fn_matrixs = full_iteration_saver(iterator, dt, Nmediciones, t -> 0., 1)
     xs, Ps = rts_smoother(results, Pnp1n_matrixs, Pnn_matrixs, Fn_matrixs, Nmediciones)
+
+    #results, ensamble, Pnp1n_matrixs, Pnn_matrixs, Cn_matrixs = full_iteration_saver(iterator, dt, Nmediciones, t -> 0., 1)
+    #xs, Ps = rts_smoother(results, Pnp1n_matrixs, Pnn_matrixs, Cn_matrixs, Nmediciones)
+
 
     results, xs, Ps
 end 
