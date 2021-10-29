@@ -43,7 +43,7 @@ function process_mob_csv(file)
 end 
 
 
-make_initial_homogeneous_mob(initial_frac_home_time, number_of_comunas) = initial_frac_home_time * ones(number_of_comunas)
+make_initial_homogeneous_mob(initial_frac_home_time, number_of_comunas) = (1 - initial_frac_home_time) * ones(number_of_comunas)
 
 """
     make_mob_in_time(comunas)
