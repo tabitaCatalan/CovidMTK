@@ -99,12 +99,6 @@ end
 
 comunas, datamap = process_mob_csv(mobfile) 
 
-try
-    # Si es que initial_data_mob está definido, usarlo. S
-    global initial_mob = initial_data_mob 
-catch # si no está definido, usar mobilidad inicial homogenea
-    global initial_mob = make_initial_homogeneous_mob(initial_frac_home_time, length(comunas2))
-end 
 
 
 #@time dm(5.); # 0.000008 seconds (1 allocation: 64 bytes)
