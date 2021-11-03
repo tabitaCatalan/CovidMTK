@@ -105,7 +105,9 @@ Applies `latexify_ticks!` in x and y axis to every subplot of `a_plot`
 function latexify_ticks!(a_plot)
     for subplot in 1:length(a_plot)
         latexify_ticks!(a_plot[subplot], :y)
-        latexify_ticks!(a_plot[subplot], :x)
+        if ! remove_xticks(subplot)
+            latexify_ticks!(a_plot[subplot], :x)
+        end
     end 
 end
 
@@ -168,6 +170,9 @@ function plot_smoothed!(a_plot, ts, xs, Ps, symstates, index; scaling_factor = 1
     plot!(ts, xs[:,index] * scaling_factor, label = label, ribbon = sqrt.(Ps[index,index,:]) * scaling_factor; kwargs...)
 end 
 
+remove_xticks(state) = ! (state in 5:6)
+
+remove_xticks!(a_plot, subplot) = plot!(a_plot[subplot], xticks = (Plots.xticks(a_plot[subplot])[1], ["" ]))
 
 """
     plot_all_states_grid(ts, xs, Ps)
@@ -188,6 +193,9 @@ function plot_all_states_grid(ts, xs, Ps, symstates)
             plot_smoothed!(a_plot, ts, xs, Ps, symstates, (state-1)*n + i, scaling_factor = scaling_factors[state], subplot = state, fillalpha = 0.1) # 10^5 
         end 
         add_scix10_to_plot!(a_plot, state, scaling_exponents[state])
+        if remove_xticks(state)
+            remove_xticks!(a_plot, state)
+        end
     end 
     plot_smoothed!(a_plot, ts, xs, Ps, symstates, 5*n + 1, subplot = 6, fillalpha = 0.1); # 10^5 
     if ! one_control 
