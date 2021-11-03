@@ -42,11 +42,11 @@ julia> split_var_and_real_index(var)
 ```
 """
 function split_var_and_real_index(var)
-    longstrvar = string(var)
-    leftbracketindex = findfirst('[', longstrvar)
-    rightbracketindex = findfirst(']', longstrvar)
-    strvar = longstrvar[1:leftbracketindex-1]
-    strindex = longstrvar[leftbracketindex+1:rightbracketindex-1]
+    longstrvar = collect(string(var))
+    leftbracketindex = findfirst(isequal('['), longstrvar)
+    rightbracketindex = findfirst(isequal(']'), longstrvar)
+    strvar = join(longstrvar[1:leftbracketindex-1])
+    strindex = join(longstrvar[leftbracketindex+1:rightbracketindex-1])
     strvar, strindex
 end 
 
