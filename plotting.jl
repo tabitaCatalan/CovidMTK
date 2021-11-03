@@ -110,8 +110,10 @@ function latexify_ticks!(a_plot)
 end
 
 #===========================
-Plot with scientific notation 
+Plot with scientific notation:
+Conservé este código porque es útil para graficar el caso sintético.
 ===========================# 
+#=
 calculate_exponent(ymin, ymax) = round(Int, log10(ymax - ymin)) + 1  
 calculate_exponent(ymin, ymax) = floor(Int, log10(ymax)) 
 minmax(sol, var) = (minimum([sol[var[1]] sol[var[2]]]), maximum([sol[var[1]] sol[var[2]]]))
@@ -129,7 +131,16 @@ function plot_scnotation!(a_plot, sol, var, subplot, scat = false)
     #annotate!(a_plot, (-0.085, 0.98), text("x10^$a", :left, 9)) # esto funcionaba con 1 plot 
     annotate!(a_plot, (-0.08, 1.1), text("x10^$a", :left, 8), subplot = subplot)    
 end 
+=#
 
+
+vars_in_state(state) = ((state-1)*n + 1):((state-1)*n + n)
+calculate_exponent(ymax) = floor(Int, log10(ymax)) 
+
+function calculate_scaling_exponents(xs, state)
+    ymax = maximum(xs[:,vars_in_state(state)])
+    calculate_exponent(ymax)
+end
 
 """
     plot_smoothed!(a_plot, ts, xs, Ps, a, index; kwargs...)
