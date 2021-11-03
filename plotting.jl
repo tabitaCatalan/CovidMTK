@@ -2,6 +2,7 @@
 Aux functions for plotting 
 =#
 using Plots: annotate!, text, scatter, scatter! 
+using LaTeXStrings
 #===========================
 Symbolics variables to Strings 
 ===========================# 
@@ -65,6 +66,16 @@ function to_subindex_string(var)
     strvar * to_subindex(strindex) * "(t)"
 end  
 
+"""
+Return a Latex string from a symbolic ModelingToolkit array variable.
+- `var`: symbolic array ModelingToolkit variable 
+- `index`: index number 
+```
+"""
+function to_latex_string(var)
+    strvar, strindex = split_var_and_real_index(var)
+    L"%$(strvar)_{%$(strindex)}(t)"
+end  
 
 #===========================
 Plot with scientific notation 
