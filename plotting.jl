@@ -133,6 +133,11 @@ function plot_scnotation!(a_plot, sol, var, subplot, scat = false)
 end 
 =#
 
+function add_scix10_to_plot!(a_plot, subplot, exponent::Int)
+    if exponent != 0
+        annotate!(a_plot, (-0.07, 1.1), text(L"\times 10^%$(exponent)", :left, 8), subplot = subplot)
+    end
+end
 
 vars_in_state(state) = ((state-1)*n + 1):((state-1)*n + n)
 calculate_exponent(ymax) = floor(Int, log10(ymax)) 
@@ -182,6 +187,7 @@ function plot_all_states_grid(ts, xs, Ps, symstates)
         for i = 1:n # clases  
             plot_smoothed!(a_plot, ts, xs, Ps, symstates, (state-1)*n + i, scaling_factor = scaling_factors[state], subplot = state, fillalpha = 0.1) # 10^5 
         end 
+        add_scix10_to_plot!(a_plot, state, scaling_exponents[state])
     end 
     plot_smoothed!(a_plot, ts, xs, Ps, symstates, 5*n + 1, subplot = 6, fillalpha = 0.1); # 10^5 
     if ! one_control 
