@@ -77,6 +77,27 @@ function to_latex_string(var)
     L"%$(strvar)_{%$(strindex)}(t)"
 end  
 
+
+"""
+Replace ticks from x or y axis of a simple Plots with a LaTeXString version.
+# Arguments 
+- `a_plot::Plots.Plot`: a simple Plot, this not intended to work with plots with subplots.
+- `axis::Symbol`: options are `:x` and `:y`. 
+"""
+function latexify_ticks!(a_plot, axis)
+    if axis == :x  
+        oldticks = Plots.xticks(a_plot)
+    elseif axis == :y
+        oldticks = Plots.yticks(a_plot)
+    end 
+    newticks = latexstring.(replace.(oldticks[2], "×" => "\\times"))
+    if axis == :x  
+        plot!(a_plot, xticks = (oldticks[1], newticks))
+    elseif axis == :y
+        plot!(a_plot, yticks = (oldticks[1], newticks))
+    end 
+end 
+
 #===========================
 Plot with scientific notation 
 ===========================# 
