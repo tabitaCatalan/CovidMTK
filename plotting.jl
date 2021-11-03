@@ -2,6 +2,7 @@
 Aux functions for plotting 
 =#
 using Plots
+using Plots.Measures
 using LaTeXStrings
 #===========================
 Symbolics variables to Strings 
@@ -203,5 +204,6 @@ function plot_all_states_grid(ts, xs, Ps, symstates)
             plot_smoothed!(a_plot, ts, xs, Ps, symstates, 5*n + i, subplot = 6, fillalpha = 0.1) # 10^5 
         end 
     end 
+    plot!(a_plot, top_margin = 3mm)
     a_plot 
 end 
