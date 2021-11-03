@@ -1,5 +1,5 @@
 allinfos = [last(entry) for entry in infocomunas]
-# encontrar y  borrar la comuna de san josé, no hay info de mobilidad 
+# encontrar y  borrar la comuna de san pedro, no hay info de mobilidad 
 #for i in 1:length(allinfos) if allinfos[i].codigo == 13505 print(i) end end # 23 
 allinfos = allinfos[[1:22;24:52]]
 
