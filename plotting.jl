@@ -205,5 +205,6 @@ function plot_all_states_grid(ts, xs, Ps, symstates)
         end 
     end 
     plot!(a_plot, top_margin = 3mm)
+    latexify_ticks!(a_plot)
     a_plot 
 end 
