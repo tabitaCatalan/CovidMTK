@@ -99,6 +99,16 @@ function latexify_ticks!(a_plot, axis)
     end 
 end 
 
+"""
+Applies `latexify_ticks!` in x and y axis to every subplot of `a_plot`
+"""
+function latexify_ticks!(a_plot)
+    for subplot in 1:length(a_plot)
+        latexify_ticks!(a_plot[subplot], :y)
+        latexify_ticks!(a_plot[subplot], :x)
+    end 
+end
+
 #===========================
 Plot with scientific notation 
 ===========================# 
