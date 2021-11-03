@@ -30,7 +30,24 @@ julia> to_subindex("1729")
 to_subindex(strnum) = join([subindexs[digit] for digit in split(strnum, "")])
 
 """
-Return a string of a symbolic ModelingToolkit array variable using subindexs.
+Return a Tuple with string of a Symbolic variable name and a string of its index.
+# Example 
+```
+julia> @variables t R[1,2](t)
+julia> var = R[2]
+R[2](t)
+julia> split_var_and_real_index(var)
+("R", "2")
+```
+"""
+function split_var_and_real_index(var)
+    longstrvar = string(var)
+    leftbracketindex = findfirst('[', longstrvar)
+    rightbracketindex = findfirst(']', longstrvar)
+    strvar = longstrvar[1:leftbracketindex-1]
+    strindex = longstrvar[leftbracketindex+1:rightbracketindex-1]
+    strvar, strindex
+end 
 - `var`: symbolic array ModelingToolkit variable 
 # Example 
 ```julia
