@@ -16,11 +16,6 @@ ipss = [infocomunas[comuna].ips for comuna in comunas2]
 nombres = [infocomunas[comuna].nombre for comuna in comunas2 ]
 
 
-function plot_smoothed!(a_plot, ts, xs, Ps, a, index; kwargs...)
-    plot!(ts, xs[:,index]/a, label = "s$index", ribbon = sqrt.(Ps[index,index,:])/a; kwargs...)
-end 
-
-
 
 
 a_plot = plot(layout=(3,2),framestyle=:box, link = :x, size = (800, 450));

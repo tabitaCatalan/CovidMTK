@@ -120,3 +120,23 @@ function plot_scnotation!(a_plot, sol, var, subplot, scat = false)
 end 
 
 
+"""
+    plot_smoothed!(a_plot, ts, xs, Ps, a, index; kwargs...)
+Grafica un serie de datos con barra de error. Agrega un label con el nombre del estado, suponiendo que el sistema es `simple_episys_uknown`.
+# Argumentos 
+- `a_plot::Plots.Plot`, se sobreescribirá para agregar el nuevo gráfico 
+- `ts`: datos del eje x 
+- `xs::Array{T,2}`: datos del eje y, con tantas filas con valores en `ts`. Cada columna corresponde a un estado distinto. 
+- `Ps::Array{T,3}`: matriz de varianzas covarianza del vector de estados en el tiempo.
+    `Ps[:,:,n]` corresponde a la matriz de covarianzas en tiempo `ts[n]`, por lo que tiene tantas filas y columnas 
+    como columnas tiene `xs`. Se usan solo las diagonales de la forma `Ps[index, index, n]` (para el error del estado `index` a tiempo `n`).
+- `symstates`: array of Modeling Toolkit Symbolic Variables.
+- `index`: se graficará solo el estado `index`-ésimo.
+## Opcionales
+- `scaling_factor = 1.`: un factor de escalamiento (útil para evitar que aparezca números con notación científica como `x 10^4`).
+- `kwargs`: keyword arguments que se pasan a la función `plot!`.
+"""
+function plot_smoothed!(a_plot, ts, xs, Ps, symstates, index; scaling_factor = 1., kwargs...)
+    label = to_latex_string(symstates[index]) # antes era "s$index"
+    plot!(ts, xs[:,index] * scaling_factor, label = label, ribbon = sqrt.(Ps[index,index,:]) * scaling_factor; kwargs...)
+end 
