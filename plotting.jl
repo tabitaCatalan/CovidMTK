@@ -74,6 +74,8 @@ Return a Latex string from a symbolic ModelingToolkit array variable.
 """
 function to_latex_string(var)
     strvar, strindex = split_var_and_real_index(var)
+    strvar = replace(strvar, "×" => "\\times") 
+    strvar = replace(strvar, "α" => "\\alpha")
     L"%$(strvar)_{%$(strindex)}(t)"
 end  
 
@@ -90,7 +92,7 @@ function latexify_ticks!(a_plot, axis)
     elseif axis == :y
         oldticks = Plots.yticks(a_plot)
     end 
-    newticks = latexstring.(replace.(oldticks[2], "×" => "\\times"))
+    newticks = latexstring.(oldticks[2])
     if axis == :x  
         plot!(a_plot, xticks = (oldticks[1], newticks))
     elseif axis == :y
