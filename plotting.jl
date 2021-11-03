@@ -74,7 +74,6 @@ Return a Latex string from a symbolic ModelingToolkit array variable.
 """
 function to_latex_string(var)
     strvar, strindex = split_var_and_real_index(var)
-    strvar = replace(strvar, "×" => "\\times") 
     strvar = replace(strvar, "α" => "\\alpha")
     L"%$(strvar)_{%$(strindex)}(t)"
 end  
@@ -83,7 +82,7 @@ end
 """
 Replace ticks from x or y axis of a simple Plots with a LaTeXString version.
 # Arguments 
-- `a_plot::Plots.Plot`: a simple Plot, this not intended to work with plots with subplots.
+- `a_plot::Plots.SubPlot`: a simple Plot, this not intended to work with plots with subplots.
 - `axis::Symbol`: options are `:x` and `:y`. 
 """
 function latexify_ticks!(a_plot, axis)
@@ -92,7 +91,7 @@ function latexify_ticks!(a_plot, axis)
     elseif axis == :y
         oldticks = Plots.yticks(a_plot)
     end 
-    newticks = latexstring.(oldticks[2])
+    newticks = latexstring.(replace.(oldticks[2], "×" => "\\times"))
     if axis == :x  
         plot!(a_plot, xticks = (oldticks[1], newticks))
     elseif axis == :y
