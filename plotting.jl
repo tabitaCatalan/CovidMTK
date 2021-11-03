@@ -175,10 +175,12 @@ Dibuja una grilla de (3,2) para cada uno de los compartimientos de un sistema SE
 - (3,2): Tasa de contagio (α)
 """
 function plot_all_states_grid(ts, xs, Ps, symstates)
+    scaling_exponents = [calculate_scaling_exponents(xs, state) for state in 1:5]
+    scaling_factors = 10 .^(-Float64.(scaling_exponents))
     a_plot = plot(layout=(3,2),framestyle=:box, link = :x, size = (800, 450));
     for state in 1:5 # estados 
         for i = 1:n # clases  
-            plot_smoothed!(a_plot, ts, xs, Ps, symstates, (state-1)*n + i, subplot = state, fillalpha = 0.1) # 10^5 
+            plot_smoothed!(a_plot, ts, xs, Ps, symstates, (state-1)*n + i, scaling_factor = scaling_factors[state], subplot = state, fillalpha = 0.1) # 10^5 
         end 
     end 
     plot_smoothed!(a_plot, ts, xs, Ps, symstates, 5*n + 1, subplot = 6, fillalpha = 0.1); # 10^5 
