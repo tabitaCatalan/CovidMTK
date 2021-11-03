@@ -48,18 +48,21 @@ function split_var_and_real_index(var)
     strindex = longstrvar[leftbracketindex+1:rightbracketindex-1]
     strvar, strindex
 end 
+
+"""
+Return a string from a symbolic ModelingToolkit array variable using subindexs.
 - `var`: symbolic array ModelingToolkit variable 
+- `index`: index number 
 # Example 
 ```julia
 @variables t S[1,2](t)
 string(S[1]) #"S[1](t)"
-to_string(S, 1) #"S₁(t)"
+to_string(S[1]) #"S₁(t)"
 ```
 """
-function to_string(var, index)
-    longstrvar = string(var[index])
-    strvar = longstrvar[1:findfirst('[', longstrvar)-1]
-    strvar * to_subindex(string(index)) * "(t)"
+function to_subindex_string(var)
+    strvar, strindex = split_var_and_real_index(var)
+    strvar * to_subindex(strindex) * "(t)"
 end  
 
 
