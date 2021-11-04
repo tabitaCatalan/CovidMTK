@@ -2,11 +2,15 @@
 Aux functions for plotting 
 =#
 using Plots
-using Plots.Measures
+using Plots.Measures: mm
 using LaTeXStrings
-#===========================
-Symbolics variables to Strings 
-===========================# 
+using Printf: @sprintf 
+#======================================
+Working with spanish days and months 
+https://docs.julialang.org/en/v1/stdlib/Dates/
+See locale attribute 
+======================================#
+
 spanish_months = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
 spanish_months_abbrev = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
 spanish_days = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"];
