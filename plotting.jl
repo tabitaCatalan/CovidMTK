@@ -7,6 +7,12 @@ using LaTeXStrings
 #===========================
 Symbolics variables to Strings 
 ===========================# 
+spanish_months = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
+spanish_months_abbrev = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
+spanish_days = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"];
+spanish_days_abbrev = ["lun", "mar", "mie", "jue", "vie", "sáb", "dom"];
+
+Dates.LOCALES["spanish"] = Dates.DateLocale(spanish_months, spanish_months_abbrev, spanish_days, spanish_days_abbrev);
 subindexs = Dict(
     "0" => "₀",
     "1" => "₁",
