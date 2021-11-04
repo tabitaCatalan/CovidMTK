@@ -13,6 +13,39 @@ spanish_days = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado",
 spanish_days_abbrev = ["lun", "mar", "mie", "jue", "vie", "sáb", "dom"];
 
 Dates.LOCALES["spanish"] = Dates.DateLocale(spanish_months, spanish_months_abbrev, spanish_days, spanish_days_abbrev);
+
+#=
+Aux funtion to treat MTK variables 
+=#
+"""
+Return a Tuple with string of a Symbolic variable name and a string of its index.
+# Example 
+```
+julia> @variables t R[1,2](t)
+julia> var = R[2]
+R[2](t)
+julia> split_var_and_real_index(var)
+("R", "2")
+```
+"""
+function split_var_and_real_index(var::Num)
+    longstrvar = collect(string(var))
+    leftbracketindex = findfirst(isequal('['), longstrvar)
+    rightbracketindex = findfirst(isequal(']'), longstrvar)
+    strvar = join(longstrvar[1:leftbracketindex-1])
+    strindex = join(longstrvar[leftbracketindex+1:rightbracketindex-1])
+    strvar, strindex
+end 
+
+#=============================== #
+# -------------------------------#
+# Symbolics variables to Strings #
+# -------------------------------#
+# ===============================# 
+
+#=============================== #
+Subindex strings 
+# ===============================# 
 subindexs = Dict(
     "0" => "₀",
     "1" => "₁",
@@ -37,25 +70,6 @@ julia> to_subindex("1729")
 """
 to_subindex(strnum) = join([subindexs[digit] for digit in split(strnum, "")])
 
-"""
-Return a Tuple with string of a Symbolic variable name and a string of its index.
-# Example 
-```
-julia> @variables t R[1,2](t)
-julia> var = R[2]
-R[2](t)
-julia> split_var_and_real_index(var)
-("R", "2")
-```
-"""
-function split_var_and_real_index(var)
-    longstrvar = collect(string(var))
-    leftbracketindex = findfirst(isequal('['), longstrvar)
-    rightbracketindex = findfirst(isequal(']'), longstrvar)
-    strvar = join(longstrvar[1:leftbracketindex-1])
-    strindex = join(longstrvar[leftbracketindex+1:rightbracketindex-1])
-    strvar, strindex
-end 
 
 """
 Return a string from a symbolic ModelingToolkit array variable using subindexs.
@@ -73,6 +87,10 @@ function to_subindex_string(var)
     strvar * to_subindex(strindex) * "(t)"
 end  
 
+#====================================== #
+Latex strings 
+# ======================================#
+
 """
 Return a Latex string from a symbolic ModelingToolkit array variable.
 - `var`: symbolic array ModelingToolkit variable 
@@ -85,6 +103,16 @@ function to_latex_string(var)
     L"%$(strvar)_{%$(strindex)}(t)"
 end  
 
+#=============================== #
+# -------------------------------#
+# Latexify                       #
+# -------------------------------#
+# ===============================# 
+
+#=============================== #
+#=============================== #
+ Ticks in plots 
+# ===============================#
 
 """
 Replace ticks from x or y axis of a simple Plots with a LaTeXString version.
@@ -120,9 +148,10 @@ end
 
 #===========================
 Plot with scientific notation:
-Conservé este código porque es útil para graficar el caso sintético.
 ===========================# 
 #=
+# Conservé este código porque es útil para graficar el caso sintético.
+
 calculate_exponent(ymin, ymax) = round(Int, log10(ymax - ymin)) + 1  
 calculate_exponent(ymin, ymax) = floor(Int, log10(ymax)) 
 minmax(sol, var) = (minimum([sol[var[1]] sol[var[2]]]), maximum([sol[var[1]] sol[var[2]]]))
@@ -156,6 +185,11 @@ function calculate_scaling_exponents(xs, state)
     calculate_exponent(ymax)
 end
 
+#============================= # 
+A versatil plotting function 
+# =============================#
+
+
 """
     plot_smoothed!(a_plot, ts, xs, Ps, a, index; kwargs...)
 Grafica un serie de datos con barra de error. Agrega un label con el nombre del estado, suponiendo que el sistema es `simple_episys_uknown`.
@@ -176,6 +210,10 @@ function plot_smoothed!(a_plot, ts, xs, Ps, symstates, index; scaling_factor = 1
     #label = to_latex_string(symstates[index]) # antes era "s$index"
     plot!(ts, xs[:,index] * scaling_factor, ribbon = sqrt.(Ps[index,index,:]) * scaling_factor; kwargs...)
 end 
+
+#================================= #
+Aux functions useful in plotting 
+# =================================#
 
 remove_xticks(state) = ! (state in 5:6)
 
@@ -220,6 +258,10 @@ julia> put_at_the_end(1:5, 3)
 ```
 """
 put_at_the_end(array, index) = array[[1:(index-1); (index+1):end; index]]
+
+#================================= # 
+High level plotting functions 
+# =================================#
 
 """
     plot_all_states_grid(ts, xs, Ps)
