@@ -181,10 +181,11 @@ end
 #=
 File names generation 
 =#
-
+using Printf: @sprintf 
 post_process(str) = replace(replace(str, " " => ""), "." => "-")
 function make_img_name(p)
     gamma_e_index = 1; gamma_i_index = 2; beta_2_index = 6; 
     gamma_e = last(p[gamma_e_index]); gamma_i = last(p[gamma_i_index]); beta_2 = last(p[beta_2_index])
-    post_process("gamma_e_$gamma_e _gamma_i_$gamma_i _beta_2_$beta_2")
+    str = @sprintf "gamma_e_%.2f _gamma_i_%.2f _beta_2_%.2f" gamma_e gamma_i beta_2 
+    post_process(str)
 end
