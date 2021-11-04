@@ -167,8 +167,8 @@ Grafica un serie de datos con barra de error. Agrega un label con el nombre del 
 - `kwargs`: keyword arguments que se pasan a la función `plot!`.
 """
 function plot_smoothed!(a_plot, ts, xs, Ps, symstates, index; scaling_factor = 1., kwargs...)
-    label = to_latex_string(symstates[index]) # antes era "s$index"
-    plot!(ts, xs[:,index] * scaling_factor, label = label, ribbon = sqrt.(Ps[index,index,:]) * scaling_factor; kwargs...)
+    #label = to_latex_string(symstates[index]) # antes era "s$index"
+    plot!(ts, xs[:,index] * scaling_factor, ribbon = sqrt.(Ps[index,index,:]) * scaling_factor; kwargs...)
 end 
 
 remove_xticks(state) = ! (state in 5:6)
@@ -225,24 +225,40 @@ Dibuja una grilla de (3,2) para cada uno de los compartimientos de un sistema SE
 - (3,1): Acumulados (C)
 - (3,2): Tasa de contagio (α)
 """
-function plot_all_states_grid(ts, xs, Ps, symstates)
-    scaling_exponents = [calculate_scaling_exponents(xs, state) for state in 1:5]
+function plot_all_states_grid(ts, xs, Ps, symstates; highlight = false, class_to_highlight = n)
+    scaling_exponents = [calculate_scaling_exponents(xs, state) for state in 1:6]
     scaling_factors = 10 .^(-Float64.(scaling_exponents))
     a_plot = plot(layout=(3,2),framestyle=:box, link = :x, size = (800, 450));
-    for state in 1:5 # estados 
-        for i = 1:n # clases  
-            plot_smoothed!(a_plot, ts, xs, Ps, symstates, (state-1)*n + i, scaling_factor = scaling_factors[state], subplot = state, fillalpha = 0.1) # 10^5 
+    if one_control
+        total_states_to_plot = 5
+        plot_smoothed!(a_plot, ts, xs, Ps, symstates, 5*n + 1,
+            scaling_factor = scaling_factors[state],
+            subplot = 6,
+            fillalpha = 0.1,
+            color = :black
+        ); 
+    else 
+        total_states_to_plot = 6
+    end
+    for state in 1:total_states_to_plot # estados 
+        for class = put_at_the_end(1:n, class_to_highlight) # clases  
+            index = (state-1)*n + class
+            attr = calculate_plot_attrib(class, symstates[index], highlight, class_to_highlight)
+            plot_smoothed!(a_plot, ts, xs, Ps, symstates,
+                index,
+                scaling_factor = scaling_factors[state],
+                subplot = state,
+                fillalpha = attr[:fillalpha],
+                color = attr[:color], 
+                fillcolor = attr[:fillcolor], 
+                label = attr[:label]
+            ) # 10^5 
         end 
+
         add_scix10_to_plot!(a_plot, state, scaling_exponents[state])
         if remove_xticks(state)
             remove_xticks!(a_plot, state)
         end
-    end 
-    plot_smoothed!(a_plot, ts, xs, Ps, symstates, 5*n + 1, subplot = 6, fillalpha = 0.1); # 10^5 
-    if ! one_control 
-        for i = 2:n # comunas 
-            plot_smoothed!(a_plot, ts, xs, Ps, symstates, 5*n + i, subplot = 6, fillalpha = 0.1) # 10^5 
-        end 
     end 
     plot!(a_plot, top_margin = 3mm)
     latexify_ticks!(a_plot)
