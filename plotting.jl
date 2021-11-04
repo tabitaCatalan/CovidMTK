@@ -238,13 +238,13 @@ remove_xticks!(a_plot, subplot) = plot!(a_plot[subplot], xticks = (Plots.xticks(
 Devuelve un Diccionario con attributos para graficar cierta clase 
 # Argumentos 
 - `class::Int`: clase a graficar
-- `strvar::String`: String de la forma "R[3](t)", correspondiente a la clase y estado a graficar.
+- `var::Num`: MTK variable, corresponiente a la clase y estado a graficar.
 - `highlight::Bool`: si es `true`, entonces se supondrá que se hará un gráfico que destaca la clase `class_to_highlight`.
     Todas las demás se grafican en gris. Si es `false` cada clase toma un color asociado a su clase (tanto para los datos 
     como para la barra de error).
 - `class_to_highlight`: solo se usa si `highlight` es `true`.
 """
-function calculate_plot_attrib(class::Int, strvar, highlight::Bool, class_to_highlight::Int)
+function calculate_plot_attrib(class::Int, var::Num, highlight::Bool, class_to_highlight::Int)
     fillalpha = 0.1
     if highlight && class_to_highlight != class
         color = :grey90
@@ -253,7 +253,7 @@ function calculate_plot_attrib(class::Int, strvar, highlight::Bool, class_to_hig
     else 
         color = class
         fillcolor = class
-        label = to_latex_string(strvar) # antes era "s$index"
+        label = to_latex_string(var) # antes era "s$index"
     end
     Dict(:color => color, :fillcolor => fillcolor, :fillalpha => fillalpha, :label => label)
 end
@@ -306,7 +306,7 @@ function plot_all_states_grid(ts, xs, Ps, symstates; highlight = false, class_to
     for state in 1:total_states_to_plot # estados 
         for class = put_at_the_end(1:n, class_to_highlight) # clases  
             index = (state-1)*n + class
-            attr = calculate_plot_attrib(class, symstates[index], highlight, class_to_highlight)
+            attr = calculate_plot_attrib(class, Num(symstates[index]), highlight, class_to_highlight)
             plot_smoothed!(a_plot, ts, xs, Ps, symstates,
                 index,
                 scaling_factor = scaling_factors[state],
