@@ -133,19 +133,24 @@ end
  Ticks in plots 
 # ===============================#
 
+# El tipo de `example_data` define el comportamiento de `transform`
+transform(strdate, example_data::Date) = Date(strdate, "y-m-d")
+transform(strfloat, example_data::Float64) = parse(Float64, strfloat)
+
 """
 Replace ticks from x or y axis of a simple Plots with a LaTeXString version.
 # Arguments 
 - `a_plot::Plots.SubPlot`: a simple Plot, this not intended to work with plots with subplots.
 - `axis::Symbol`: options are `:x` and `:y`. 
+- `y0`
 """
-function latexify_ticks!(a_plot, axis)
+function latexify_ticks!(a_plot::Plots.Subplot, axis::Symbol, example_data)
     if axis == :x  
         oldticks = Plots.xticks(a_plot)
     elseif axis == :y
         oldticks = Plots.yticks(a_plot)
     end 
-    newticks = latexstring.(replace.(oldticks[2], "×" => "\\times"))
+    newticks = to_latex_string.(transform.(oldticks[2], example_data))
     if axis == :x  
         plot!(a_plot, xticks = (oldticks[1], newticks))
     elseif axis == :y
@@ -156,11 +161,11 @@ end
 """
 Applies `latexify_ticks!` in x and y axis to every subplot of `a_plot`
 """
-function latexify_ticks!(a_plot)
+function latexify_ticks!(a_plot::Plots.Plot, t0, y0)
     for subplot in 1:length(a_plot)
-        latexify_ticks!(a_plot[subplot], :y)
+        latexify_ticks!(a_plot[subplot], :y, y0)
         if ! remove_xticks(subplot)
-            latexify_ticks!(a_plot[subplot], :x)
+            latexify_ticks!(a_plot[subplot], :x, t0)
         end
     end 
 end
@@ -327,7 +332,7 @@ function plot_all_states_grid(ts, xs, Ps, symstates; highlight = false, class_to
             remove_xticks!(a_plot, state)
         end
     end 
-    plot!(a_plot, top_margin = 3mm)
-    latexify_ticks!(a_plot)
+    plot!(a_plot, top_margin = 3mm) 
+    latexify_ticks!(a_plot, ts[1], xs[1,1])
     a_plot 
 end 
