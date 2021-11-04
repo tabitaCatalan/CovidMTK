@@ -1,7 +1,11 @@
 results, xs, Ps = kalman_iteration(initial_u0(a₀), p);
 
 plot_all_states_grid(tsdate, xs, Ps, states(simple_episys_uknown))
-plot_all_states_grid(tsdate, xs, Ps, states(simple_episys_uknown), highlight = true, class_to_highlight = 4)
+savefig(folder * "kalman_grouped_allstates_allgroups" * make_img_name(p) * ".svg")
+for class in 1:n 
+    plot_all_states_grid(tsdate, xs, Ps, states(simple_episys_uknown), highlight = true, class_to_highlight = class)
+    savefig(folder * "kalman_grouped_allstates_group$class" * make_img_name(p) * ".svg")
+end 
 #@enter kalman_iteration(initial_u0(a₀), p);
 
 plot(interpolated_prod15_grouped .+ 1 , yscale = :log10)
