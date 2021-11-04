@@ -254,12 +254,13 @@ Devuelve un Diccionario con attributos para graficar cierta clase
 - `class_to_highlight`: solo se usa si `highlight` es `true`.
 """
 function calculate_plot_attrib(class::Int, var::Num, highlight::Bool, class_to_highlight::Int)
-    fillalpha = 0.1
     if highlight && class_to_highlight != class
         color = :grey90
         fillcolor = :gray90
         label = :none
+        fillalpha = 0.3
     else 
+        fillalpha = 0.15
         color = class
         fillcolor = class
         label = to_latex_string(var) # antes era "s$index"
