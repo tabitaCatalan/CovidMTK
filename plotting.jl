@@ -298,6 +298,7 @@ Dibuja una grilla de (3,2) para cada uno de los compartimientos de un sistema SE
 - (3,2): Tasa de contagio (α)
 """
 function plot_all_states_grid(ts, xs, Ps, symstates; highlight = false, class_to_highlight = n)
+    class_to_highlight = highlight ? class_to_highlight : n
     scaling_exponents = [calculate_scaling_exponents(xs, state) for state in 1:6]
     scaling_factors = 10 .^(-Float64.(scaling_exponents))
     a_plot = plot(layout=(3,2),framestyle=:box, link = :x, size = (800, 450));
