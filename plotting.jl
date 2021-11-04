@@ -176,6 +176,30 @@ remove_xticks(state) = ! (state in 5:6)
 remove_xticks!(a_plot, subplot) = plot!(a_plot[subplot], xticks = (Plots.xticks(a_plot[subplot])[1], ["" ]))
 
 """
+Devuelve un Diccionario con attributos para graficar cierta clase 
+# Argumentos 
+- `class::Int`: clase a graficar
+- `strvar::String`: String de la forma "R[3](t)", correspondiente a la clase y estado a graficar.
+- `highlight::Bool`: si es `true`, entonces se supondrá que se hará un gráfico que destaca la clase `class_to_highlight`.
+    Todas las demás se grafican en gris. Si es `false` cada clase toma un color asociado a su clase (tanto para los datos 
+    como para la barra de error).
+- `class_to_highlight`: solo se usa si `highlight` es `true`.
+"""
+function calculate_plot_attrib(class::Int, strvar, highlight::Bool, class_to_highlight::Int)
+    fillalpha = 0.1
+    if highlight && class_to_highlight != class
+        color = :grey90
+        fillcolor = :gray90
+        label = :none
+    else 
+        color = class
+        fillcolor = class
+        label = to_latex_string(strvar) # antes era "s$index"
+    end
+    Dict(:color => color, :fillcolor => fillcolor, :fillalpha => fillalpha, :label => label)
+end
+
+"""
     plot_all_states_grid(ts, xs, Ps)
 Dibuja una grilla de (3,2) para cada uno de los compartimientos de un sistema SEIR. 
 - (1,1): Susceptibles (S)
