@@ -82,7 +82,7 @@ string(S[1]) #"S[1](t)"
 to_string(S[1]) #"S₁(t)"
 ```
 """
-function to_subindex_string(var)
+function to_subindex_string(var::Num)
     strvar, strindex = split_var_and_real_index(var)
     strvar * to_subindex(strindex) * "(t)"
 end  
@@ -93,11 +93,11 @@ Latex strings
 
 """
 Return a Latex string from a symbolic ModelingToolkit array variable.
-- `var`: symbolic array ModelingToolkit variable 
+- `var`: symbolic ModelingToolkit variable 
 - `index`: index number 
 ```
 """
-function to_latex_string(var)
+function to_latex_string(var::Num)
     strvar, strindex = split_var_and_real_index(var)
     strvar = replace(strvar, "α" => "\\alpha")
     L"%$(strvar)_{%$(strindex)}(t)"
@@ -110,6 +110,21 @@ end
 # ===============================# 
 
 #=============================== #
+ Numbers and dates 
+# ===============================#
+
+function to_latex_string(t::Date)
+    (y, m, d) = Dates.yearmonthday(t)
+    strm = Dates.monthabbr(m; locale = "spanish")
+    L"%$d \textrm{/%$(strm)/} %$y"
+end 
+
+to_latex_string(ft::Float64) = latexstring(@sprintf "%.1f" ft)
+
+function to_latex_string(a)
+    latexstring(a)
+end 
+
 #=============================== #
  Ticks in plots 
 # ===============================#
