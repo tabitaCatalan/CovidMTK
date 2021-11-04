@@ -138,7 +138,7 @@ end
 
 function add_scix10_to_plot!(a_plot, subplot, exponent::Int)
     if exponent != 0
-        annotate!(a_plot, (-0.07, 1.1), text(L"\times 10^%$(exponent)", :left, 8), subplot = subplot)
+        annotate!(a_plot, (-0.07, 1.1), text(L"\times 10^{%$(exponent)}", :left, 8), subplot = subplot)
     end
 end
 
