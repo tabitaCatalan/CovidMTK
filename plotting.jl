@@ -200,6 +200,22 @@ function calculate_plot_attrib(class::Int, strvar, highlight::Bool, class_to_hig
 end
 
 """
+    put_at_the_end(array, index)
+Returns an array with the `index`-th element removed and inderted at the end.
+# Example 
+```
+julia> put_at_the_end(1:5, 3)
+5-element Vector{Int64}:
+ 1
+ 2
+ 4
+ 5
+ 3
+```
+"""
+put_at_the_end(array, index) = array[[1:(index-1); (index+1):end; index]]
+
+"""
     plot_all_states_grid(ts, xs, Ps)
 Dibuja una grilla de (3,2) para cada uno de los compartimientos de un sistema SEIR. 
 - (1,1): Susceptibles (S)
