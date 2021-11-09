@@ -22,6 +22,10 @@ julia> semana_to_lastday(6)
 """
 semana_to_lastday(week) = Date(2020,2,22) + (week - 1) * Day(7)
 
+function are_all_equal(array)
+    sum(array[1] .!= array) == 0
+end
+
 function process_prod_15(file)
     dfprod15 = DataFrame(CSV.File(file))
 
@@ -31,7 +35,14 @@ function process_prod_15(file)
         # código comuna => array de confirmados de esa comuna 
         dfprod15RM[index_comuna,4] => cumsum(dfprod15RM[index_comuna,6:end]) for index_comuna in 1:53
     )
-    lastepiday = semana_to_lastday.(1:77) 
+    lens = length.(values(prod15map))
+    if are_all_equal(lens)
+        print("Datos de confirmados completos")
+    else 
+        print("Datos incompletos!!")
+    end 
+    weeks = lens[1]
+    lastepiday = semana_to_lastday.(1:weeks) 
     prod15map, lastepiday 
 end 
 
