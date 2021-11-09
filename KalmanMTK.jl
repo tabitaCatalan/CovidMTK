@@ -192,22 +192,27 @@ function kalman_iteration(u0, p)
     #                                        pvec, 
     #                                        x -> SI2(x, total), 
     #                                        UM)
-
-    Q = Diagonal(sqrt(dt) * ones(length(u0vec)))
+    dims = length(u0vec)
+    Q = Diagonal(sqrt(dt) * SVector{dims}(ones(dims)))
     rkx = KalmanFilter.RK4Dx(epi_dynamics, epi_jacobian, pvec, dt)
-    nlupdater = NLUpdater(rkx, x -> F(u0vec), Q, copy(u0vec), 0., 0., x -> SI2(x, total))
+    
+    integrity(x) = SI2(x, total)
+    nlupdater = NLUpdater(rkx, F(max_values_vec), Q, copy(u0vec), 0., 0., integrity)
     system = KalmanFilter.Measurements(observaciones, dt)
 
     G = ones(2 * n)
     G[1:n] *= 1000.; G[n+1:2n] *= 10.
+    G = Diagonal(SVector{2n}(G))
 
-    observer = KalmanFilter.LinearObserver(H, zeros(2n), G, observation_integrity)
+    obsdim = size(H)[1]
+    R = Diagonal(sqrt(dt) * SVector{obsdim}(ones(obsdim)))
+    observer = KalmanFilter.SimpleLinearObserver(H, zeros(2n), G, R)
 
     #=
     Iterator y matriz de covarianzas inicial 
     =# 
     
-    iterator = KalmanFilter.LinearKalmanIterator(u0vec, Pfunc(max_values_vec), nlupdater, observer, system, dt, lowpass_parameters) 
+    iterator = KalmanFilter.SimpleKalmanIterator(u0vec, Pfunc(max_values_vec), nlupdater, observer, system, dt, lowpass_parameters) 
 
     #results, ensamble = KalmanFilter.full_iteration(iterator, dt, Nmediciones, t -> 0., 1, obscheck = false) 
     
