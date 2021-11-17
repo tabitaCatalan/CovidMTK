@@ -20,16 +20,35 @@ dispersion(ν, x) = Diagonal(ν .* x)
 a₀ = 0.0135
 F = (x) -> dispersion(0.1 * ones(length(x)), x)
 
-max_values = [
-    make_alpha(simple_episys_uknown, 8e-2);
-    [S[i] => 0.1 * S0[i] for i in 1:n]; 
-    [E[i] => 0.07 * S0[i] for i in 1:n];
-    [I[i] => 0.005 * S0[i] for i in 1:n]; 
-    [R[i] => 0.07 * S0[i] for i in 1:n];
-    [C[i] => 0.07 * S0[i] for i in 1:n];
-]; 
+"""
+- `x`: array de 6 elementos, `x[1]` se asocia a `S`, `x[2]` a `E`, 
+    `x[3]` a `I`, `x[4]` a `R`, `x[5]` a `C` y `x[6]` a `α`. All values 
+    except of `x[6]` are seen as ponderators of `S` (total value).  
+# Ejemplo 
+```julia
+make_max_vals([0.1, 0.007, 0.005, 0.07, 0.07, 2e-1])
+```
+"""
+function make_max_vals(x)
+    [ # inicial 
+        make_alpha(simple_episys_uknown, x[6]);
+        [S[i] => x[1] * S0[i] for i in 1:n]; 
+        [E[i] => x[2] * S0[i] for i in 1:n];
+        [I[i] => x[3] * S0[i] for i in 1:n]; 
+        [R[i] => x[4] * S0[i] for i in 1:n];
+        [C[i] => x[5] * S0[i] for i in 1:n];
+        make_rate(x[7], x[7]); # solo si variable_rate = true 
+    ]; 
+end 
+
+#max_values = make_max_vals([0.1, 0.007, 0.005, 0.07, 0.07, 2e-1]);
+max_values = make_max_vals([0.1, 0.007, 0.005, 0.07, 0.07, 2e-1, 1.]);
+
+max_values_v2 = make_max_vals([5e-2, 8e-8, 8e-8, 8e-8, 5e-3, 2e-4, 1/20.]);
+#max_values_v2 = make_max_vals([5e-2, 8e-8, 8e-8, 8e-8, 5e-3, 2e-4]);
 
 max_values_vec = ModelingToolkit.varmap_to_vars(max_values, states(simple_episys_uknown))
+max_values_vec_v2 = ModelingToolkit.varmap_to_vars(max_values, states(simple_episys_uknown))
 
 #=
 (S + E + R)./ total
@@ -90,7 +109,8 @@ lowpass_parameters = ModelingToolkit.varmap_to_vars(
         [I[i] => 1. for i in 1:n]; 
         [C[i] => 1. for i in 1:n]; 
         #[α[i] => 1. for i in 1:n];
-        make_alpha(simple_episys_uknown, lowpass_alpha)
+        make_alpha(simple_episys_uknown, lowpass_alpha);
+        make_rate(1., 1.);
         ]
     ,states(simple_episys_uknown)
 );
@@ -197,7 +217,8 @@ function kalman_iteration(u0, p)
     rkx = KalmanFilter.RK4Dx(epi_dynamics, epi_jacobian, pvec, dt)
     
     integrity(x) = SI2(x, total)
-    nlupdater = NLUpdater(rkx, F(max_values_vec), Q, copy(u0vec), 0., 0., integrity)
+    nlupdater = NLUpdater(rkx, F(u0vec), Q, copy(u0vec), 0., 0., integrity)
+    #nlupdater = NLUpdater(rkx, F(max_values_vec_v2), Q, copy(u0vec), 0., 0., integrity)
     system = KalmanFilter.Measurements(observaciones, dt)
 
     G = ones(2 * n)
@@ -226,7 +247,7 @@ function kalman_iteration(u0, p)
     results, xs, Ps
 end 
 
-function initial_u0(a0)
+function initial_u0(a0, gamma_e, gamma_i)
     u0 = [
         make_alpha(simple_episys_uknown, a0);
         [S[i] => S0[i] for i in 1:n]; 
@@ -234,6 +255,7 @@ function initial_u0(a0)
         [R[i] => R0[i] for i in 1:n];
         [I[i] => I0[i] for i in 1:n];
         [C[i] => C0[i] for i in 1:n];
+        make_rate(gamma_e, gamma_i);
     ];
 end 
 
@@ -241,7 +263,7 @@ end
 function create_p(x)
     @inbounds a0, beta2, gamma_e, gamma_i = x
     p = [
-            γₑ => gamma_e, 
+            #γₑ => gamma_e, 
             γᵢ => gamma_i, 
             [N[i] => total[i] for i = 1:n]...,
             β[1] => 1.0, 
@@ -253,14 +275,14 @@ function create_p(x)
 end 
 
 
-function loss_from_alpha0(a0, p, rango = 1:100)
+#=function loss_from_alpha0(a0, p, rango = 1:100)
     u0 = initial_u0(a0)    
     results, xs, Ps = kalman_iteration(u0, p)
     
     println("")
     #loss(results.analysis, observaciones, rango)
     loss(xs, observaciones, rango)
-end 
+end =#
 
 
 #loss_from_alpha0(a₀, p_real, 1:400)
