@@ -1,12 +1,13 @@
 
 # grouping_of_municipalities = 3 # high, medium, low 
-number_of_selected_municipalities = 5; # con cuántas municipalidades trabajar 
-initial_frac_home_time = 0.5
+number_of_selected_municipalities = 2; # con cuántas municipalidades trabajar 
+initial_frac_home_time = 0.23
 lag_days_confirmed = 7 # número de días para el promedio móvil del número de confirmados 
 one_control = false
 lowpass_alpha = 0.99
 beta_exterior = 60.
 number_of_groups = 5 
+variable_rate = true
 # grouped = false # No voy a usar esta variable, separaré los archivos importantes en dos 
 #=
 Voy a separar el código en 3 secciones: 
@@ -47,18 +48,18 @@ julia> initial_res_time_matrix_with_sleep
  0.732865  0.267135
 =#
 #inital_data_mob = [0.378289, 0.336854, 0.328694, 0.333596, 0.327061] # invertida, descontando 7/24
-initial_data_mob = [0.267135, 0.237449, 0.231375, 0.233682, 0.23085] # invertida
-initial_mob = initial_data_mob  # en caso de tener una mobilidad inicial, e.g. dada por la encuesta origen destino 
+#initial_data_mob = [0.267135, 0.237449, 0.231375, 0.233682, 0.23085] # invertida, este es el que uso 
+#initial_mob = initial_data_mob  # en caso de tener una mobilidad inicial, e.g. dada por la encuesta origen destino 
 
 #initial_mob = make_initial_homogeneous_mob(initial_frac_home_time, number_of_groups)
-#initial_mob = make_initial_homogeneous_mob(initial_frac_home_time, number_of_selected_municipalities )
+initial_mob = make_initial_homogeneous_mob(initial_frac_home_time, number_of_selected_municipalities)
 
 
-include("grouped.jl") 
-#include("not-grouped.jl")
+#include("grouped.jl") 
+include("not-grouped.jl")
 
-interpolated_prod15_grouped = make_grouped_prod15_confirmed(groups, prod15map, lastepiday)
-#interpolated_prod15 = make_prod15_confirmed(comunas2, prod15map, lastepiday)
+#interpolated_prod15_grouped = make_grouped_prod15_confirmed(groups, prod15map, lastepiday)
+interpolated_prod15 = make_prod15_confirmed(comunas2, prod15map, lastepiday)
 
 dm = DataMatrix(Pt)
 residence_times_matrix(t, i, j) = dm(t, i, j)
@@ -72,8 +73,8 @@ include("plotting.jl")
 
 
 #===incluir solo uno de los dos ===#
-include("multiclassMTKGrouped.jl")
-#include("multiclassMTK.jl")
+#include("multiclassMTKGrouped.jl")
+include("multiclassMTK.jl")
 #=---------------------------------=#
 
 include("linear_coeff.jl")
@@ -97,15 +98,19 @@ n_obs = size(observaciones)[1]
 for i in 1:n 
     observaciones = [observaciones total[i]*ones(n_obs)]
 end
+
+observaciones = synthetic_obs
+n_obs = size(observaciones)[1]
+for i in 1:n 
+    observaciones = [observaciones total[i]*ones(n_obs)]
+end
+
 #=---------------------------------=#
 
 include("KalmanMTK.jl") 
 
 #include("optim.jl")
 
-#tsdate = Date(2020,03,30):Day(1):Date(2021,04,1) 
-
-a = 1
 #=
 using ModelingToolkit 
 @variables t x(t) y(t) 

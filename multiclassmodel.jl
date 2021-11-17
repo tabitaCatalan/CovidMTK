@@ -4,6 +4,22 @@ Inner aux functions of model
 
 using ModelingToolkit
 
+#=============================================
+Generic functions 
+=============================================#
+
+"""
+- `γₑ::Num` symbolic variable of MTK, time dependent 
+- `gamma_e::Float64` a constant value for `γₑ`
+"""
+function constant_value_equation(sym, value, t) 
+    [sym ~ value]
+end 
+
+zero_dynamics(α, t) = [Differential(t)(αi) ~ 0. for αi in α] 
+
+
+#===============================================# 
 function common_dynamics(D, x, p, λ)
     γₑ, γᵢ = p 
     S, E, I, R, C, N = x  
@@ -34,10 +50,6 @@ function environment_contact_rate(t, x, λ, TRM, residence_times_data, α, β)
     ]
 end 
 
-zero_dynamics(α) = [D(αi) ~ 0. for ai in α] 
-function common_control(α, control_pieces, t) 
-    [αi ~ control_pieces(t) for ai in α]
-end 
 
 function eqs_common_epi_model(n, m, t, residence_times_data, α, control_eqs)
     a = 1
@@ -58,6 +70,27 @@ function eqs_common_epi_model(n, m, t, residence_times_data, α, control_eqs)
     ];
 end 
 
+function eqs_epi_model_variable_rates(n, m, t, residence_times_data, α, control_eqs, (γₑ, γᵢ), rate_eqs)
+    a = 1
+    @parameters β[1:m] N[1:n]
+    @variables S[1:n](t) E[1:n](t) I[1:n](t) R[1:n](t) C[1:n](t) λ[1:n](t)
+    @variables TRM[1:n, 1:m](t)
+     
+
+    D = Differential(t) 
+
+    #S, E, I, R, C, N = x 
+    x = (S, E, I, R, C, N) 
+
+    [
+        environment_contact_rate(t, x, λ, TRM, residence_times_data, α, β);
+        common_dynamics(D, x, (γₑ, γᵢ), λ);
+        control_eqs;
+        rate_eqs;
+        # zero_dynamics(γₑ); para el caso unknown 
+    ];
+end 
+
 function get_alpha(one_control, t, n) 
     if one_control 
         @variables α(t) 
@@ -67,8 +100,29 @@ function get_alpha(one_control, t, n)
     α
 end 
 
+function get_rates(variable_rate, t)
+    if variable_rate
+        @variables γₑ(t) γᵢ(t)
+    else
+        @parameters γₑ γᵢ
+    end  
+    (γₑ, γᵢ)
+end 
 
-zero_dynamics(α) = [D(αi) ~ 0. for αi in α] 
+function get_rate_equations(variable_rate::Bool, (γₑ, γᵢ), gamma_e, gamma_i, t; known::Bool)
+    if variable_rate
+        if known
+            rate_eqs = [constant_value_equation(γₑ, gamma_e, t); constant_value_equation(γᵢ, gamma_i, t)]
+        else
+            rate_eqs = zero_dynamics([γₑ, γᵢ], t)
+        end
+    else
+        rate_eqs = []
+    end  
+    rate_eqs
+end 
+
+
 
 """
 # Arguments 
@@ -79,6 +133,11 @@ zero_dynamics(α) = [D(αi) ~ 0. for αi in α]
 function common_control(α, control_pieces, t) 
     [αi ~ control_pieces(t) for αi in α]
 end 
+
+function two_control(α, control, t) 
+    [α[i] ~ control(t,i) for i in 1:2]
+end 
+
 
 #=
 Principal model functions 
@@ -93,12 +152,26 @@ Principal model functions
     a different control for each class `αᵢ(t)` is used instead.
 - `t`: Num, of Symbolics. Independent variable 
 """
-function epi_model_known_input(t, n, m, residence_times_data, control_pieces, one_control = true; name)
+function epi_model_known_input(t, n, m, residence_times_data, control_pieces, one_control = true, variable_rate = false, gamma_e = 1/5, gamma_i = 1/7; name)
     α = get_alpha(one_control, t, n) 
-    control_eqs = common_control(α, control_pieces, t) 
-    eqs = eqs_common_epi_model(n, m, t, residence_times_data, α, control_eqs)
+    if one_control
+        control_eqs = common_control(α, control_pieces, t) 
+    else 
+        control_eqs = two_control(α, control_pieces, t) 
+    end
+
+    γₑ, γᵢ = get_rates(variable_rate, t)
+    rate_eqs = get_rate_equations(variable_rate, (γₑ, γᵢ), gamma_e, gamma_i, t, known = true)
+    eqs = eqs_epi_model_variable_rates(n, m, t, residence_times_data, α, control_eqs, (γₑ, γᵢ), rate_eqs)
     ODESystem(eqs;name)
 end 
+
+α = get_alpha(one_control, t, n) 
+if one_control
+    control_eqs = common_control(α, control_pieces, t) 
+else 
+    control_eqs = two_control(α, controls, t) 
+end
 
 """
 # Arguments 
@@ -109,10 +182,14 @@ end
     the indexes of a matrix, ``1 \\leq i \\leq n, 1 \\leq j \\leq m``.
 - `one_control::Bool`. If `true` a common control `α(t)` is used for each class. If `false`, 
     a different control for each class `αᵢ(t)` is used instead.
+- `variable_rate::Bool`: if `true`, then `γₑ` and `γᵢ` are considered as part of the augmented state.
+- `gamma_e = 1/5`: only used if `variable_rate` is `true`.
 """
-function epi_model_unknown_input(t, n, m, residence_times_data, one_control = true; name)
+function epi_model_unknown_input(t, n, m, residence_times_data, one_control = true, variable_rate = false, gamma_e = 1/5, gamma_i = 1/7; name)
     α = get_alpha(one_control, t, n)
-    eqs = eqs_common_epi_model(n, m, t, residence_times_data, α, zero_dynamics(α))
+    γₑ, γᵢ = get_rates(variable_rate, t)
+    rate_eqs = get_rate_equations(variable_rate, (γₑ, γᵢ), gamma_e, gamma_i, t, known = false)
+    eqs = eqs_epi_model_variable_rates(n, m, t, residence_times_data, α, zero_dynamics(α, t), (γₑ, γᵢ), rate_eqs)
     ODESystem(eqs;name)
 end 
 
@@ -158,6 +235,10 @@ function make_alpha(system, α0)
     control_eq
 end 
 
+function make_rate(gamma_e, gamma_i)
+    [γₑ => gamma_e, γᵢ => gamma_i]
+end 
+
 function make_x_uk(system, α0, S, E, I, R, C)
     
     control_eq = make_alpha(system, α0) 
@@ -167,7 +248,6 @@ function make_x_uk(system, α0, S, E, I, R, C)
     ]    
 end 
 
-
 function make_p(system, gammae, gammai, total, beta)
     n, m = get_size(system)
     [
@@ -176,6 +256,7 @@ function make_p(system, gammae, gammai, total, beta)
         [β[i] => beta[i] for i = 1:m];
     ]
 end 
+
 
 
 #=

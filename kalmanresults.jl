@@ -6,11 +6,34 @@ for class in 1:n
     plot_all_states_grid(tsdate, xs, Ps, states(simple_episys_uknown), highlight = true, class_to_highlight = class)
     savefig(folder * "kalman_grouped_allstates_group$class" * make_img_name(p) * ".svg")
 end 
+plot_all_states_grid(tsdate, xs, Ps, states(simple_episys_uknown), highlight = true, class_to_highlight = 1)
+plot_all_states_grid(tsdate, xs, Ps, states(simple_episys_uknown), highlight = true, class_to_highlight = 3)
+plot_all_states_grid(tsdate, xs, Ps, states(simple_episys_uknown), highlight = true, class_to_highlight = 5)
 #@enter kalman_iteration(initial_u0(a₀), p);
 
-plot(interpolated_prod15_grouped .+ 1 , yscale = :log10)
-plot(interpolated_prod15 .+ 1, alpha = 0.2, yscale = :log10)
-plot!(observaciones .+ 1, color = [1 2 3 4 5])
+b_plot = plot(title = L"\gamma_e")
+plot_smoothed!(b_plot, ts, xs, Ps, states(simple_episys_uknown),
+                6n+1,
+                scaling_factor = 1,
+                color = n+1, 
+                fillcolor = n+1
+            )
+
+#dt(odeupdater::KalmanFilter.ODEForecaster) = odeupdater.dt
+
+plot(ts, xs[:,6n+1])
+
+plot(results, ts, 3)
+plot(results.analysis[:,1:n], )
+plot(results.analysis[:,n+1:2n])
+plot(results.analysis[:,2n+1:3n])
+plot(results.analysis[:,3n+1:4n])
+plot(results.analysis[:,4n+1:5n])
+plot(results.analysis[:,5n+1:6n])
+
+#plot(interpolated_prod15_grouped .+ 1 , yscale = :log10)
+#plot(interpolated_prod15 .+ 1, alpha = 0.2, yscale = :log10)
+#plot!(observaciones .+ 1, color = [1 2 3 4 5])
 
 plot(results.analysis[:,1])
 

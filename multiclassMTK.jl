@@ -9,9 +9,17 @@ m = 2 # number of environments
 # register data functions 
 @variables t 
 @register control_pieces(t)
+@register controls(t, i)
 @register residence_times_matrix(t, i, j)
-@parameters γₑ γᵢ β[1:m] N[1:n]
+@parameters β[1:m] N[1:n]
 @variables S[1:n](t) E[1:n](t) I[1:n](t) R[1:n](t) C[1:n](t) λ[1:n](t)
+
+if variable_rate 
+    @variables γₑ(t) γᵢ(t)
+else 
+    @parameters γₑ γᵢ
+end 
+
 #@variables TRM[1:n, 1:m](t)
 D = Differential(t) 
 #= +28 ... para ajustar los tiempos
@@ -23,13 +31,16 @@ confirmed prod 15 starts 2020-02-22
 adjusted_rtm(t,i,j) = residence_times_matrix(t+28, i, j)
 
 # epi_model_unknown_input y epi_model_known_input están definidas en multiclass_model.jl 
-@named episys_uknown = epi_model_unknown_input(t, n, m, adjusted_rtm, one_control)
-@named episys_known = epi_model_known_input(t, n, m, adjusted_rtm, control_pieces)
+#@named episys_uknown = epi_model_unknown_input(t, n, m, adjusted_rtm, one_control)
+#@named episys_known = epi_model_known_input(t, n, m, adjusted_rtm, controls, one_control)
 
+gamma_e_real = 1/5.3; gamma_i_real = 1/7.2
+@named episys_uknown = epi_model_unknown_input(t, n, m, adjusted_rtm, false, variable_rate, gamma_e_real, gamma_i_real)
+@named episys_known = epi_model_known_input(t, n, m, adjusted_rtm, controls, false, variable_rate,gamma_e_real, gamma_i_real)
 #=
 Initial conditions 
 =#
-
+1
 
 S0 = [infocomunas[comuna].poblacion for comuna in comunas2];
 E0 = 10 * rand(n) .+ 20; # agregué gente random a una comuna random 
@@ -49,7 +60,7 @@ simple_episys_uknown = structural_simplify(episys_uknown); # to generate synthet
 #=
 #Lo ideal sería que funcionara esto........
 =#
-u0_real = make_x_k(episys_known, S0, E0, I0, R0, C0) 
+u0_real = make_x_k(simple_episys_known, S0, E0, I0, R0, C0) 
 #=
 u0_real = [
     [S[i] => S0[i] for i in 1:n];
@@ -59,16 +70,20 @@ u0_real = [
     [C[i] => C0[i] for i in 1:n];
 ] =#
 
-u0 = make_x_uk(episys_uknown, 0.0110, S0, E0, I0, R0, C0)
+gamma_e = 1/7.2 ; gamma_i = 1/4.2
+u0 = make_x_uk(simple_episys_uknown, 0.0110, S0, E0, I0, R0, C0)
+if variable_rate
+    global u0 = [u0; make_rate(gamma_e, gamma_i)]
+end 
 
-beta_real = [1., 50.]
+beta_real = [1., 51.]
 beta = [1., beta_exterior] # hay que probar qué tan sensible es c/r al segundo valor β₂
 
 
-p_real = make_p(episys_known, 1/5.3, 1/8.3, total, beta_real)
+p_real = make_p(episys_known, gamma_e_real, gamma_i_real, total, beta_real)
 
 
-p = make_p(episys_uknown, 1/5.1, 1/7.2, total, beta) # otros valores 
+p = make_p(episys_uknown, gamma_e, gamma_i, total, beta) # otros valores 
 
 #=p1 = [
     [γₑ => 1/7]; # midiendo en semanas... un lío con la matrix P 
@@ -77,13 +92,22 @@ p = make_p(episys_uknown, 1/5.1, 1/7.2, total, beta) # otros valores
 ]=#
 
 # Synthetic data
-#prob_known = ODEProblem(simple_episys_known, u0_real, (0.0,T), p_real, jac = true, sparse = true);
+prob_known = ODEProblem(simple_episys_known, u0_real, (0.0,T), p_real, jac = true, sparse = true);
 
-#prob1 = ODEProblem(simple_epi_system, u0, (0.0,400.0), p1);
+#prob1 = ODEProblem(simple_epi_system, u0, (0.0,400.0), p_real);
 #prob2 = ODEProblem(simple_epi_system, u0, (0.0,400.0), p);
-#sol = solve(prob_known, Tsit5(), saveat = 1.);
-#synthetic_obs = [sol[C[1]] sol[C[2]]];
+sol = solve(prob_known, Tsit5(), saveat = 1.);
+synthetic_obs = [sol[C[1]] sol[C[2]]];
 
+
+plot(sol, vars = (t, S))
+plot(sol, vars = (t, E))
+plot(sol, vars = (t, I))
+plot(sol, vars = (t, R))
+plot(sol, vars = (t, C))
+plot(sol, vars = (t, γₑ))
+#plot(ts, control_pieces.(ts))
+#plot!(ts, control_pieces_v2.(ts))
 
 using Plots: plot, plot!, savefig
 
@@ -140,7 +164,7 @@ plot_scnotation!(a_plot, sol, C, 3)
 plot!(ts, control_pieces.(ts), ylabel = "α(t)", subplot = 4, legend=:none, xlabel = "t")
 savefig(folder * "allstates" * make_img_name(p_real) * ".svg")
 
-## mobility 
+mobility 
 plot(100 * datamap[comunas2[1]], ylabel = "% variation w/r to initial mobility", label = "municipality 1")
 plot!(100 * datamap[comunas2[2]], label = "municipality 2", ylims = (0,100), legend = :bottomright)
 savefig(folder * "mobility_$(comunas2[1])_$(comunas2[2]).svg")
@@ -164,6 +188,7 @@ system_jacobian = eval(jac2[1]);
 #jac2 = calculate_jacobian(simple_episys_uknown, sparse = true); # esto debería ser la función que devuelve el jacobiano 
 #jac1 = calculate_jacobian(simple_episys_uknown);
 pvec = ModelingToolkit.varmap_to_vars(p,parameters(simple_episys_uknown));
+p_realvec = ModelingToolkit.varmap_to_vars(p_real,parameters(simple_episys_uknown));
 u0vec = ModelingToolkit.varmap_to_vars(u0,states(simple_episys_uknown));
 #class_names_vec = ModelingToolkit.varmap_to_vars(class_names,states(simple_episys_uknown));
 
