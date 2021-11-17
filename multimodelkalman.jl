@@ -30,9 +30,9 @@ observer = KalmanFilter.CommonObserver(H, makeG, x -> x, 1.)
 
 # Parameters 
 
-priors = [0.1, 0.6, 0.3] 
+priors = ones(6)/6 
 
-param = ComponentArray( p = p_realvec,
+param1 = ComponentArray( p = p_realvec,
                         filter_p = ComponentArray(
                                     Fmaxval = [5e-2, 8e-8, 8e-8, 8e-8, 5e-3, 2e-4],
                                     Gmaxval = 100., 
@@ -72,25 +72,35 @@ param5 = ComponentArray( p = pvec,
                         )
 
 
-param6 = ComponentArray( p = p_realvec,
+param6 = ComponentArray( p = pvec,
                         filter_p = ComponentArray(
                                     Fmaxval = [1e-2, 2e-9, 2e-8, 2e-8, 1e-3, 8e-5],
                                     Gmaxval = 100., 
                                     initialcov = [0.08, 0.0007, 0.0005, 0.007, 0.007, 8e-2]
                                     )
                         )
-param1 = ComponentArray(p = ComponentArray(wn = sqrt(4.)), filter_p = ComponentArray(wn = sqrt(4.)))
-param2 = ComponentArray(p = ComponentArray(wn = sqrt(4.4)), filter_p = ComponentArray(wn = sqrt(4.4)))
-param3 = ComponentArray(p = ComponentArray(wn = sqrt(4.8)), filter_p = ComponentArray(wn = sqrt(4.8)))
+    
 
-u0 
-P0 = Diagonal(ModelingToolkit.varmap_to_vars(make_max_vals(filter_p.initialcov), states(simple_episys_uknown)))
+make_initial_cov(filter_p) = Diagonal(ModelingToolkit.varmap_to_vars(make_max_vals(filter_p.initialcov), states(simple_episys_uknown)))
+ 
+params = [param1, param2, param3, param4, param5, param6]
 
-X0 = ComponentArray(x = u0, P = P0)
+make_X0(u0,P0) = ComponentArray(x = u0, P = P0) 
 
 models = copy([
-            KalmanFilter.SimpleKalmanEstimation(param1, copy(X0), copy(X0)), 
-            KalmanFilter.SimpleKalmanEstimation(param2, copy(X0), copy(X0)), 
-            KalmanFilter.SimpleKalmanEstimation(param3, copy(X0), copy(X0))
+            KalmanFilter.SimpleKalmanEstimation(param, make_X0(u0vec, make_initial_cov(param.filter_p)), make_X0(u0vec, make_initial_cov(param.filter_p))) for param in params
         ])
 
+system = KalmanFilter.Measurements(observaciones, dt)
+
+mmkf = KalmanFilter.MultipleModelKalman(copy(priors), models, updater, observer, system, 0);
+
+priors_in_time = Array{Float64, 2}(undef, Nmediciones, length(params))
+for time in 1:Nmediciones
+    priors_in_time[time, :] = mmkf.priors
+    KalmanFilter.next_iteration!(mmkf, 0.)
+end 
+
+mmkf.priors
+
+plot(priors_in_time)
