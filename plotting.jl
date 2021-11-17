@@ -135,7 +135,7 @@ end
 
 # El tipo de `example_data` define el comportamiento de `transform`
 transform(strdate, example_data::Date) = Date(strdate, "y-m-d")
-transform(strfloat, example_data::Float64) = parse(Float64, strfloat)
+transform(strfloat, example_data::Float64) = parse(Float64, replace(strfloat, "−" => "-"))
 
 """
 Replace ticks from x or y axis of a simple Plots with a LaTeXString version.
