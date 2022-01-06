@@ -115,6 +115,7 @@ final_p = p
 solutions = [make_and_solve_case(t, n, m, metadata, final_u0, final_p) for metadata in metadata_casos];
 
 
+#=
 a_plot = plot(framestyle=:box, size = (1800, 1200), layout = (3,3), link = :y);
 for i in 1:length(casos)
     plot!(a_plot, solutions[i]["solucion"],
@@ -132,7 +133,7 @@ savefig(folder * "hipcases" * make_img_name(p) * ".pdf")
 # De estos mencionar solamente la proporción final, el máximo y el tiempo estimado que tarda 
 plot(solutions[1]["solucion"], vars = (t, S)) # la población de enferma dentro de los primeros 3 meses hasta alcanzar la inmunidad de rebaño 
 plot(solutions[2]["solucion"], vars = (t, S)) 
-
+=#
 
 incidence(t, E) = (t, E./total)
 
@@ -192,25 +193,6 @@ function plot_compare_with_normal_case(solutions, ts, index, case; xymeasures = 
 end
 
 
-indexI = 11:15
-a_plot = plot_all_hipot_cases(solutions, tsdate, indexS; normalize = true)
-plot_all_hipot_cases(solutions, tsdate, indexS; normalize = true)
-savefig(folder * "allhipcases_S-N_" * make_img_name(p) * ".pdf")
-
-plot_all_hipot_cases(solutions, tsdate, indexI; normalize = true, common_ylims = true, ylims = (0., 0.15))
-savefig(folder * "allhipcases_I-N_commonylim0-15_" * make_img_name(p) * ".pdf")
-
-plot_all_hipot_cases(solutions, tsdate, indexI; normalize = true, common_ylims = false)
-savefig(folder * "allhipcases_I-N_" * make_img_name(p) * ".pdf")
-
-plot_all_hipot_cases(solutions, tsdate, indexI; normalize = true, common_ylims = true, ylims = (0.,0.015))
-savefig(folder * "allhipcases_I-N_commonylim0-015" * make_img_name(p) * ".pdf")
-
-plot_all_hipot_cases(solutions, tsdate, indexI; normalize = false, common_ylims = true, ylims = (0., 5e4))
-savefig(folder * "allhipcases_I_commonylim5e4_" * make_img_name(p) * ".pdf")
-
-
-
 function plot_important_dates!(a_plot, important_dates; relx = 0.03, rely = 0.9, fontsize = 8, letras = true)
     char = letras ? 'a' : 1
     for i in 1:length(important_dates)
@@ -237,6 +219,28 @@ function to_relative_x(p::Plots.Subplot, datex)
     xlims = Plots.xlims(p)
     (x - xlims[1])/(xlims[2] - xlims[1])
 end 
+
+
+#=========================================
+Obtener gráficos 
+=========================================#
+indexI = 11:15
+a_plot = plot_all_hipot_cases(solutions, tsdate, indexS; normalize = true)
+plot_all_hipot_cases(solutions, tsdate, indexS; normalize = true)
+savefig(folder * "allhipcases_S-N_" * make_img_name(p) * ".pdf")
+
+plot_all_hipot_cases(solutions, tsdate, indexI; normalize = true, common_ylims = true, ylims = (0., 0.15))
+savefig(folder * "allhipcases_I-N_commonylim0-15_" * make_img_name(p) * ".pdf")
+
+plot_all_hipot_cases(solutions, tsdate, indexI; normalize = true, common_ylims = false)
+savefig(folder * "allhipcases_I-N_" * make_img_name(p) * ".pdf")
+
+plot_all_hipot_cases(solutions, tsdate, indexI; normalize = true, common_ylims = true, ylims = (0.,0.015))
+savefig(folder * "allhipcases_I-N_commonylim0-015" * make_img_name(p) * ".pdf")
+
+plot_all_hipot_cases(solutions, tsdate, indexI; normalize = false, common_ylims = true, ylims = (0., 5e4))
+savefig(folder * "allhipcases_I_commonylim5e4_" * make_img_name(p) * ".pdf")
+
 
 important_dates = [Date(2020, 5, 5), Date(2021, 3, 1), Date(2021, 6, 9)]
 for i in [3, 4, 7, 8] # Casos interesantes
