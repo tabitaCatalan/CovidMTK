@@ -136,7 +136,7 @@ end
 # El tipo de `example_data` define el comportamiento de `transform`
 transform(strdate, example_data::Date) = Date(strdate, "y-m-d")
 transform(strfloat, example_data::Float64) = parse(Float64, replace(strfloat, "−" => "-"))
-
+transform(strfloat, example_data::String) = replace(replace(strfloat, "−" => "-"), "×" => "\\times")
 """
 Replace ticks from x or y axis of a simple Plots with a LaTeXString version.
 # Arguments 
@@ -161,15 +161,14 @@ end
 """
 Applies `latexify_ticks!` in x and y axis to every subplot of `a_plot`
 """
-function latexify_ticks!(a_plot::Plots.Plot, t0, y0)
+function latexify_ticks!(a_plot::Plots.Plot, t0, y0, notremoved = 1:length(a_plot))
     for subplot in 1:length(a_plot)
         latexify_ticks!(a_plot[subplot], :y, y0)
-        if ! remove_xticks(subplot)
-            latexify_ticks!(a_plot[subplot], :x, t0)
-        end
     end 
+    for subplot in notremoved
+        latexify_ticks!(a_plot[subplot], :x, t0)
+    end
 end
-
 #===========================
 Plot with scientific notation:
 ===========================# 
@@ -268,6 +267,8 @@ function calculate_plot_attrib(class::Int, var::Num, highlight::Bool, class_to_h
     Dict(:color => color, :fillcolor => fillcolor, :fillalpha => fillalpha, :label => label)
 end
 
+
+
 """
     put_at_the_end(array, index)
 Returns an array with the `index`-th element removed and inderted at the end.
@@ -335,6 +336,98 @@ function plot_all_states_grid(ts, xs, Ps, symstates; highlight = false, class_to
         end
     end 
     plot!(a_plot, top_margin = 3mm) 
-    latexify_ticks!(a_plot, ts[1], xs[1,1])
+    latexify_ticks!(a_plot, ts[1], xs[1,1], [5,6])
     a_plot 
 end 
+
+
+function plot_compartment_and_incidence(ts, xs, Ps, symstates, totals, state; highlight = false, class_to_highlight = n)
+    class_to_highlight = highlight ? class_to_highlight : n
+    scaling_exponents = [calculate_scaling_exponents(xs, state) for state in 1:6]
+    scaling_factors = 10 .^(-Float64.(scaling_exponents))
+    #a_plot = plot(layout=(1,2),framestyle=:box, link = :x, size = (800, 150)); <- este funciona
+    #a_plot = plot(layout=(2,1),framestyle=:box, link = :x, size = (500, 300), palette = palette([:green, :yellow, :red], 5));
+    #a_plot = plot(layout=(2,1),framestyle=:box, link = :x, size = (500, 300), palette = palette([:lightseagreen, :darkgoldenrod1, :firebrick], 5));
+    a_plot = plot(layout=(2,1),framestyle=:box, link = :x, size = (500, 300));
+    
+    
+    for class = put_at_the_end(1:n, class_to_highlight) # clases  
+        index = (state-1)*n + class
+        attr = calculate_plot_attrib(class, Num(symstates[index]), highlight, class_to_highlight)
+        plot_smoothed!(a_plot, ts, xs, Ps, symstates,
+            index,
+            scaling_factor = scaling_factors[state],
+            subplot = 1,
+            fillalpha = attr[:fillalpha],
+            color = attr[:color], 
+            fillcolor = attr[:fillcolor], 
+            label = :none, #attr[:label], 
+            legend = :none, 
+            title = L"\textrm{%$(statesfullnamemap[state])}",
+            ylabel = L"\,%$(statesmap[state])_i(t)"
+        ) # 10^5 
+        incidlabel = attr[:label] == :none ? :none : L"%$(statesmap[state])_{%$(class)}(t) /N_{%$(class)}" 
+        
+        plot_smoothed!(a_plot, ts, xs, Ps, states(simple_episys_uknown),
+            index,
+            scaling_factor = 1/totals[class],
+            subplot = 2,
+            color = attr[:color], 
+            fillcolor = attr[:fillcolor], 
+            fillalpha = attr[:fillalpha],
+            label = :none,
+            legend = :none, 
+            #ylabel = L"\textrm{%$(statesfullnamemap[state])}\, %$(statesmap[state])_i(t) /N_i"
+            ylabel = L"%$(statesmap[state])_i(t) /N_i"
+        );
+    end 
+
+    add_scix10_to_plot!(a_plot, 1, scaling_exponents[state])
+
+    plot!(a_plot, top_margin = 3mm) 
+    #latexify_ticks!(a_plot, ts[1], xs[1,1])
+    a_plot 
+end
+
+function plot_alpha(ts, xs, Ps, symstates, totals; highlight = false, class_to_highlight = n)
+
+    a_plot = plot(layout=(3,2),framestyle=:box, link = :x, size = (500, 150));
+    scaling_exponents = [calculate_scaling_exponents(xs, state) for state in 1:6]
+    scaling_factors = 10 .^(-Float64.(scaling_exponents))
+    #a_plot = plot(layout=(1,2),framestyle=:box, link = :x, size = (800, 150)); <- este funciona
+    #a_plot = plot(layout=(2,1),framestyle=:box, link = :x, size = (500, 300), palette = palette([:green, :yellow, :red], 5));
+    #a_plot = plot(layout=(2,1),framestyle=:box, link = :x, size = (500, 300), palette = palette([:lightseagreen, :darkgoldenrod1, :firebrick], 5));
+    a_plot = plot(framestyle=:box, size = (500, 160));
+    
+    state = 6
+    for class = put_at_the_end(1:n, class_to_highlight) # clases  
+        index = (state-1)*n + class
+        attr = calculate_plot_attrib(class, Num(symstates[index]), highlight, class_to_highlight)
+        plot_smoothed!(a_plot, ts, xs, Ps, symstates,
+            index,
+            scaling_factor = scaling_factors[state],
+            fillalpha = attr[:fillalpha],
+            color = attr[:color], 
+            fillcolor = attr[:fillcolor], 
+            label = :none, #attr[:label], 
+            legend = :none, 
+            title = L"\textrm{Factor}\,\,\textrm{sanitario}\,\,\alpha_i",
+            #ylabel = L"\,%$(statesmap[state])_i(t)"
+        ) # 10^5 
+    end
+    add_scix10_to_plot!(a_plot, 1, scaling_exponents[6])
+    latexify_ticks!(a_plot, ts[1], xs[1,1], [1])
+    a_plot
+end
+
+
+statesmap = ["S", "E", "I", "R", "C", "\alpha"]
+statesfullnamemap = ["Susceptibles", "Expuestos", "Infectados", "Recuperados", "Acumulados", ""]
+
+#=s1 = scatter(1:10, 1:10, legend = false, color = 1)
+s2 = scatter(1:10, 1:10, legend = false, color = 2)
+s3 = scatter(1:10, 1:10, legend = false, color = 3)
+s4 = scatter(1:10, 1:10, legend = false, color = 4)
+legend = plot([0 0 0 0], showaxis = false, grid = false, label = ["s1" "s2" "s3" "s4"])
+plot(s1, s2, s3, s4, legend, layout = @layout([[A B; C D] E{.1w}])) 
+=#
