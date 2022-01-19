@@ -24,3 +24,10 @@ bajo = GroupData("Bajo", "bajo", groups[5], datamap)
 datagroups = [alto, medioalto, medio, mediobajo, bajo]
 totales_por_clase = poblacion.(datagroups)
 Pt = makePmatrix(initial_mob, mobility_from_grouped(datagroups));
+
+# esto funciona como debería 
+#plot(alto.mobilidad)
+#plot!(medioalto.mobilidad)
+#plot!(bajo.mobilidad)
+
+plot(mobility_from_grouped(datagroups)')

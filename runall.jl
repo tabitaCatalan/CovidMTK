@@ -5,9 +5,15 @@ initial_frac_home_time = 0.23
 lag_days_confirmed = 7 # número de días para el promedio móvil del número de confirmados 
 one_control = false
 lowpass_alpha = 0.99
-beta_exterior = 60.
 number_of_groups = 5 
 variable_rate = true
+variable_beta = true
+
+is_synthetic = false
+
+#folder = "img/"
+folder = "C:/Users/Tabita/Documents/Covid/Tesis/img/resultados/"
+
 # grouped = false # No voy a usar esta variable, separaré los archivos importantes en dos 
 #=
 Voy a separar el código en 3 secciones: 
@@ -48,18 +54,18 @@ julia> initial_res_time_matrix_with_sleep
  0.732865  0.267135
 =#
 #inital_data_mob = [0.378289, 0.336854, 0.328694, 0.333596, 0.327061] # invertida, descontando 7/24
-#initial_data_mob = [0.267135, 0.237449, 0.231375, 0.233682, 0.23085] # invertida, este es el que uso 
-#initial_mob = initial_data_mob  # en caso de tener una mobilidad inicial, e.g. dada por la encuesta origen destino 
+initial_data_mob = [0.267135, 0.237449, 0.231375, 0.233682, 0.23085] # invertida, este es el que uso 
+initial_mob = initial_data_mob  # en caso de tener una mobilidad inicial, e.g. dada por la encuesta origen destino 
 
 #initial_mob = make_initial_homogeneous_mob(initial_frac_home_time, number_of_groups)
-initial_mob = make_initial_homogeneous_mob(initial_frac_home_time, number_of_selected_municipalities)
+#initial_mob = make_initial_homogeneous_mob(initial_frac_home_time, number_of_selected_municipalities)
 
 
-#include("grouped.jl") 
-include("not-grouped.jl")
+include("grouped.jl") 
+#include("not-grouped.jl")
 
-#interpolated_prod15_grouped = make_grouped_prod15_confirmed(groups, prod15map, lastepiday)
-interpolated_prod15 = make_prod15_confirmed(comunas2, prod15map, lastepiday)
+interpolated_prod15_grouped = make_grouped_prod15_confirmed(groups, prod15map, lastepiday)
+#interpolated_prod15 = make_prod15_confirmed(comunas2, prod15map, lastepiday)
 
 dm = DataMatrix(Pt)
 residence_times_matrix(t, i, j) = dm(t, i, j)
@@ -73,8 +79,12 @@ include("plotting.jl")
 
 
 #===incluir solo uno de los dos ===#
-#include("multiclassMTKGrouped.jl")
-include("multiclassMTK.jl")
+gamma_e_real = 1/5.3; gamma_i_real = 1/7.2; beta_exterior_real = 63.1;
+
+gamma_e = 1/4.8 ; gamma_i = 1/6.7; beta_exterior = 68. # estaba usando este en el sintético y funcionaba bien
+#gamma_e = 1/4. ; gamma_i = 1/4.; beta_exterior = 40. # usé este en el agrupado y funcionó nefasto 
+include("multiclassMTKGrouped.jl")
+#include("multiclassMTK.jl")
 #=---------------------------------=#
 
 include("linear_coeff.jl")

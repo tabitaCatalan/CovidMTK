@@ -70,9 +70,8 @@ function eqs_common_epi_model(n, m, t, residence_times_data, α, control_eqs)
     ];
 end 
 
-function eqs_epi_model_variable_rates(n, m, t, residence_times_data, α, control_eqs, (γₑ, γᵢ), rate_eqs)
-    a = 1
-    @parameters β[1:m] N[1:n]
+function eqs_epi_model_variable_rates(n, m, t, residence_times_data, α, control_eqs, (γₑ, γᵢ), rate_eqs, β, beta_eqs)
+    @parameters N[1:n]
     @variables S[1:n](t) E[1:n](t) I[1:n](t) R[1:n](t) C[1:n](t) λ[1:n](t)
     @variables TRM[1:n, 1:m](t)
      
@@ -81,12 +80,13 @@ function eqs_epi_model_variable_rates(n, m, t, residence_times_data, α, control
 
     #S, E, I, R, C, N = x 
     x = (S, E, I, R, C, N) 
-
+    
     [
         environment_contact_rate(t, x, λ, TRM, residence_times_data, α, β);
         common_dynamics(D, x, (γₑ, γᵢ), λ);
         control_eqs;
         rate_eqs;
+        beta_eqs;
         # zero_dynamics(γₑ); para el caso unknown 
     ];
 end 
@@ -138,6 +138,36 @@ function two_control(α, control, t)
     [α[i] ~ control(t,i) for i in 1:2]
 end 
 
+function n_controls(α, control, t; n = n) 
+    n_given_variable_time_eqs(α, control, t; n = n)
+end 
+
+function n_given_variable_time_eqs(var, time_function, t; n = n)
+    [var[i] ~ time_function(t,i) for i in 1:n]
+end 
+
+function get_beta(variable_beta, t) 
+    @parameters βᵢₙ
+    if variable_beta
+        @variables βₑₓ(t)
+    else 
+        @parameters βₑₓ
+    end 
+    [βᵢₙ, βₑₓ]
+end
+
+function get_beta_equations(variable_beta::Bool, β, beta_ext, t; known::Bool)
+    if variable_beta
+        if known
+            beta_eqs = constant_value_equation(β[2], beta_ext, t)
+        else
+            beta_eqs = zero_dynamics(β[2], t)
+        end
+    else
+        beta_eqs = []
+    end  
+    beta_eqs
+end 
 
 #=
 Principal model functions 
@@ -152,26 +182,21 @@ Principal model functions
     a different control for each class `αᵢ(t)` is used instead.
 - `t`: Num, of Symbolics. Independent variable 
 """
-function epi_model_known_input(t, n, m, residence_times_data, control_pieces, one_control = true, variable_rate = false, gamma_e = 1/5, gamma_i = 1/7; name)
+function epi_model_known_input(t, n, m, residence_times_data, control_pieces, one_control = true, variable_rate = false, gamma_e = 1/5, gamma_i = 1/7, variable_beta = false, beta_2 = 50.; name)
     α = get_alpha(one_control, t, n) 
-    if one_control
-        control_eqs = common_control(α, control_pieces, t) 
-    else 
+    if is_synthetic
         control_eqs = two_control(α, control_pieces, t) 
+    else 
+        control_eqs = common_control(α, control_pieces, t)         
     end
 
     γₑ, γᵢ = get_rates(variable_rate, t)
     rate_eqs = get_rate_equations(variable_rate, (γₑ, γᵢ), gamma_e, gamma_i, t, known = true)
-    eqs = eqs_epi_model_variable_rates(n, m, t, residence_times_data, α, control_eqs, (γₑ, γᵢ), rate_eqs)
+    β = get_beta(variable_beta, t)
+    beta_eqs = get_beta_equations(variable_rate, β, beta_2, t, known = true)
+    eqs = eqs_epi_model_variable_rates(n, m, t, residence_times_data, α, control_eqs, (γₑ, γᵢ), rate_eqs, β, beta_eqs)
     ODESystem(eqs;name)
 end 
-
-α = get_alpha(one_control, t, n) 
-if one_control
-    control_eqs = common_control(α, control_pieces, t) 
-else 
-    control_eqs = two_control(α, controls, t) 
-end
 
 """
 # Arguments 
@@ -185,11 +210,45 @@ end
 - `variable_rate::Bool`: if `true`, then `γₑ` and `γᵢ` are considered as part of the augmented state.
 - `gamma_e = 1/5`: only used if `variable_rate` is `true`.
 """
-function epi_model_unknown_input(t, n, m, residence_times_data, one_control = true, variable_rate = false, gamma_e = 1/5, gamma_i = 1/7; name)
+function epi_model_unknown_input(t, n, m, residence_times_data, one_control = true, variable_rate = false, gamma_e = 1/5, gamma_i = 1/7, variable_beta = false, beta_2 = 50.; name)
     α = get_alpha(one_control, t, n)
     γₑ, γᵢ = get_rates(variable_rate, t)
     rate_eqs = get_rate_equations(variable_rate, (γₑ, γᵢ), gamma_e, gamma_i, t, known = false)
-    eqs = eqs_epi_model_variable_rates(n, m, t, residence_times_data, α, zero_dynamics(α, t), (γₑ, γᵢ), rate_eqs)
+    β = get_beta(variable_beta, t)
+    beta_eqs = get_beta_equations(variable_rate, β, beta_2, t, known = false)
+    eqs = eqs_epi_model_variable_rates(n, m, t, residence_times_data, α, zero_dynamics(α, t), (γₑ, γᵢ), rate_eqs, β, beta_eqs)
+    ODESystem(eqs;name)
+end 
+
+
+
+"""
+A different control for each class `αᵢ(t)` is used instead. Variables rates and β₂ are needed.
+# Arguments 
+- `t::Num`: Symbolics independent variable.
+- `residence_times_data`: registered in Symbolics function of `(t, i, j)`.
+- `control_pieces`: registered in Symbolics function of `t`. Debe poder evaluarse `control_pieces(t, i)` para `i` en `1:n`.
+- `t`: Num, of Symbolics. Independent variable ... creo que la definiré dentro.
+- `control_pieces`: n controles... para tiempo t debe retornar un vector de largo n. 
+- `gamma_e`, `gamma_i`, `beta_2`: funciones dependientes del tiempo que retornan valores escalares. Previamente registradas en Symbolics.
+"""
+function epi_model_known_all_inputs(t, n, m, residence_times_data, control_pieces, gamma_e, gamma_i, beta_2; name)
+    one_control = false # siempre 
+    variable_rate = true # siempre
+    variable_beta = true # siempre 
+    # gamma_e = 1/5, gamma_i = 1/7, beta_2 = 50. # los gammas tendrán que ser variables... debería poder evaluar en tiempo 
+    α = get_alpha(one_control, t, n) 
+    control_eqs = n_controls(α, control_pieces, t, n = n)
+    
+    γₑ, γᵢ = get_rates(variable_rate, t)
+    rate_eqs = [γₑ ~ gamma_e(t); γᵢ ~ gamma_i(t)]
+    #rate_eqs = get_rate_equations(variable_rate, (γₑ, γᵢ), gamma_e, gamma_i, t, known = true)
+
+    β = get_beta(variable_beta, t)
+    
+    beta_eqs = [β[2] ~ beta_2(t)]
+    #beta_eqs = get_beta_equations(variable_rate, β, beta_2, t, known = true)
+    eqs = eqs_epi_model_variable_rates(n, m, t, residence_times_data, α, control_eqs, (γₑ, γᵢ), rate_eqs, β, beta_eqs)
     ODESystem(eqs;name)
 end 
 
@@ -239,12 +298,14 @@ function make_rate(gamma_e, gamma_i)
     [γₑ => gamma_e, γᵢ => gamma_i]
 end 
 
+function make_beta(beta_ext)
+    [β[1] => 1., β[2] => beta_ext]
+end 
+
 function make_x_uk(system, α0, S, E, I, R, C)
-    
-    control_eq = make_alpha(system, α0) 
     [
-        control_eq;
-        make_x_k(system, S, E, I, R, C)
+        make_alpha(system, α0);
+        make_x_k(system, S, E, I, R, C);
     ]    
 end 
 
@@ -265,8 +326,8 @@ File names generation
 using Printf: @sprintf 
 post_process(str) = replace(replace(str, " " => ""), "." => "-")
 function make_img_name(p)
-    gamma_e_index = 1; gamma_i_index = 2; beta_2_index = 6; 
+    gamma_e_index = 1; gamma_i_index = 2; beta_2_index = n + 4; 
     gamma_e = last(p[gamma_e_index]); gamma_i = last(p[gamma_i_index]); beta_2 = last(p[beta_2_index])
-    str = @sprintf "gamma_e_%.2f _gamma_i_%.2f _beta_2_%.2f" gamma_e gamma_i beta_2 
+    str = @sprintf "gamma_e_%.4f _gamma_i_%.4f _beta_2_%.4f" gamma_e gamma_i beta_2 
     post_process(str)
 end

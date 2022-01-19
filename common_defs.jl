@@ -1,5 +1,8 @@
-dt = 1.#0.1 # Intervalo de sampleo de observaciones 
+dt = 1. # Intervalo de sampleo de observaciones 
 T = 500. # Se resolverá el problema en el intervalo [0,T]
+if is_synthetic
+    T = 230.
+end
 Nmediciones = Int(T/dt) # número de mediciones 
 ts = 0.:dt:(T-dt) # grilla de tiempos 
 

@@ -188,7 +188,7 @@ function plot_compare_with_normal_case(solutions, ts, index, case; xymeasures = 
         data_case,
         label = :none, ylabel = "", color = [1 2 3 4 5])
     latexify_ticks!(a_plot, ts[1], " ")
-    
+    plot!(right_margin = 3mm)
     a_plot
 end
 

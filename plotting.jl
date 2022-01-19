@@ -123,7 +123,7 @@ function to_latex_string(t::Date)
     L"%$d \textrm{/%$(strm)/} %$y"
 end 
 
-to_latex_string(ft::Float64) = latexstring(@sprintf "%.1f" ft)
+to_latex_string(ft::Float64) = latexstring(@sprintf "%.2f" ft)
 
 function to_latex_string(a)
     latexstring(a)
@@ -341,7 +341,7 @@ function plot_all_states_grid(ts, xs, Ps, symstates; highlight = false, class_to
 end 
 
 
-function plot_compartment_and_incidence(ts, xs, Ps, symstates, totals, state; highlight = false, class_to_highlight = n)
+function plot_compartment_and_incidence(ts, xs, Ps, symstates, totals, state; highlight = false, class_to_highlight = n, estimado = false, title = false)
     class_to_highlight = highlight ? class_to_highlight : n
     scaling_exponents = [calculate_scaling_exponents(xs, state) for state in 1:6]
     scaling_factors = 10 .^(-Float64.(scaling_exponents))
@@ -350,20 +350,19 @@ function plot_compartment_and_incidence(ts, xs, Ps, symstates, totals, state; hi
     #a_plot = plot(layout=(2,1),framestyle=:box, link = :x, size = (500, 300), palette = palette([:lightseagreen, :darkgoldenrod1, :firebrick], 5));
     a_plot = plot(layout=(2,1),framestyle=:box, link = :x, size = (500, 300));
     
-    
     for class = put_at_the_end(1:n, class_to_highlight) # clases  
         index = (state-1)*n + class
         attr = calculate_plot_attrib(class, Num(symstates[index]), highlight, class_to_highlight)
         plot_smoothed!(a_plot, ts, xs, Ps, symstates,
             index,
-            scaling_factor = scaling_factors[state],
+            scaling_factor = 1., #scaling_factors[state],
             subplot = 1,
             fillalpha = attr[:fillalpha],
             color = attr[:color], 
             fillcolor = attr[:fillcolor], 
-            label = :none, #attr[:label], 
-            legend = :none, 
-            title = L"\textrm{%$(statesfullnamemap[state])}",
+            label = estimado && class == class_to_highlight ? L"\textrm{estimado}" : :none,
+            #legend = :none, 
+            title = title ? L"\textrm{%$(statesfullnamemap[state])}" : "",
             ylabel = L"\,%$(statesmap[state])_i(t)"
         ) # 10^5 
         incidlabel = attr[:label] == :none ? :none : L"%$(statesmap[state])_{%$(class)}(t) /N_{%$(class)}" 
@@ -375,23 +374,37 @@ function plot_compartment_and_incidence(ts, xs, Ps, symstates, totals, state; hi
             color = attr[:color], 
             fillcolor = attr[:fillcolor], 
             fillalpha = attr[:fillalpha],
-            label = :none,
-            legend = :none, 
+            label = estimado && class == class_to_highlight ? L"\textrm{estimado}" : "",
+            #legend = :none, 
             #ylabel = L"\textrm{%$(statesfullnamemap[state])}\, %$(statesmap[state])_i(t) /N_i"
             ylabel = L"%$(statesmap[state])_i(t) /N_i"
         );
     end 
 
-    add_scix10_to_plot!(a_plot, 1, scaling_exponents[state])
+    #add_scix10_to_plot!(a_plot, 1, scaling_exponents[state])
 
     plot!(a_plot, top_margin = 3mm) 
-    #latexify_ticks!(a_plot, ts[1], xs[1,1])
+    latexify_ticks!(a_plot[1], :y, " ")
+    latexify_ticks!(a_plot[1], :x, ts[1])
+    latexify_ticks!(a_plot[2], :y, xs[1,1])
+    latexify_ticks!(a_plot[2], :x, ts[1])
     a_plot 
 end
 
-function plot_alpha(ts, xs, Ps, symstates, totals; highlight = false, class_to_highlight = n)
+function plot_compartment_and_incidence_solution!(a_plot, ts, sol, total, state, class_to_hightlight)
+    plot!(a_plot, ts, sol[n*(state - 1)+class_to_hightlight, 1:end-1],
+        subplot = 1, label = L"\textrm{real}", 
+        color = n+6 + class_to_hightlight)
+    plot!(a_plot, ts, sol[n*(state - 1)+class_to_hightlight, 1:end-1] / total[class_to_hightlight], subplot = 2,
+        label = L"\textrm{real}",
+        color = n+6 + class_to_hightlight
+    )
+end 
 
-    a_plot = plot(layout=(3,2),framestyle=:box, link = :x, size = (500, 150));
+
+function plot_alpha(ts, xs, Ps, symstates, totals; highlight = false, class_to_highlight = n, title = false, estimado = false)
+
+
     scaling_exponents = [calculate_scaling_exponents(xs, state) for state in 1:6]
     scaling_factors = 10 .^(-Float64.(scaling_exponents))
     #a_plot = plot(layout=(1,2),framestyle=:box, link = :x, size = (800, 150)); <- este funciona
@@ -405,21 +418,67 @@ function plot_alpha(ts, xs, Ps, symstates, totals; highlight = false, class_to_h
         attr = calculate_plot_attrib(class, Num(symstates[index]), highlight, class_to_highlight)
         plot_smoothed!(a_plot, ts, xs, Ps, symstates,
             index,
-            scaling_factor = scaling_factors[state],
+            scaling_factor = 1., #scaling_factors[state],
             fillalpha = attr[:fillalpha],
             color = attr[:color], 
             fillcolor = attr[:fillcolor], 
-            label = :none, #attr[:label], 
-            legend = :none, 
-            title = L"\textrm{Factor}\,\,\textrm{sanitario}\,\,\alpha_i",
+            label = estimado && class == class_to_highlight ? L"\textrm{estimado}" : :none, 
+            title = title ? L"\textrm{Factor}\,\,\textrm{sanitario}\,\,\alpha_i" : "",
             #ylabel = L"\,%$(statesmap[state])_i(t)"
         ) # 10^5 
     end
-    add_scix10_to_plot!(a_plot, 1, scaling_exponents[6])
+    #add_scix10_to_plot!(a_plot, 1, scaling_exponents[6])
+    plot!(ylims = (0., 0.03))
     latexify_ticks!(a_plot, ts[1], xs[1,1], [1])
     a_plot
 end
 
+function plot_real_control!(a_plot, ts, controls, class_to_highlight)
+    plot!(a_plot, ts, controls.(0.:dt:T-dt, class_to_highlight), color = n+6 + class_to_highlight, label = L"\textrm{real}")
+end
+
+
+error_propagation_add((x, Δx), (y, Δy)) = (x + y, √(Δx^2 + Δy^2))
+
+relative_error((x, Δx), (y, Δy)) = √((Δx/x)^2 + (Δy/y)^2)
+
+function error_propagation_mul((x, Δx), (y, Δy))
+    q = xy 
+    Δq = abs(q) * relative_error((x, Δx), (y, Δy))
+    (q, Δq)
+end
+function error_propagation_div((x, Δx), (y, Δy))
+    q = x/y 
+    Δq = abs(q) * relative_error((x, Δx), (y, Δy))
+    (q, Δq)
+end
+
+get_data_and_error(index, t, xs, Ps) = (xs[t, index], sqrt(Ps[index, index, t]))
+
+function plot_inverted(ts, xs, Ps, index; kwargs...)
+
+    a_plot = plot(framestyle=:box, size = (500, 160));
+    gamma_and_error = [error_propagation_div((1.,0.), get_data_and_error(index, k, xs, Ps)) for k in 1:Nmediciones]
+    plot!(a_plot, ts, [gamma_and_error[i][1] for i in 1:Nmediciones], ribbon = [gamma_and_error[i][2] for i in 1:Nmediciones]; kwargs...)
+
+    
+    latexify_ticks!(a_plot, ts[1], xs[1,1], [1])
+    a_plot
+end
+
+function plot_beta(ts, xs, Ps; kwargs...)
+
+    a_plot = plot(framestyle=:box, size = (500, 160));
+    plot_smoothed!(b_plot, ts, xs, Ps, states(simple_episys_uknown),
+                6n+3,
+                scaling_factor = 1,
+                color = n+5, 
+                fillcolor = n+5;
+                kwargs... #"β₂ estimado por Kalman"
+            );
+    latexify_ticks!(a_plot, ts[1], xs[1,1], [1])
+    a_plot
+end
 
 statesmap = ["S", "E", "I", "R", "C", "\alpha"]
 statesfullnamemap = ["Susceptibles", "Expuestos", "Infectados", "Recuperados", "Acumulados", ""]

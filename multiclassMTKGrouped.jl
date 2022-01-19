@@ -10,8 +10,17 @@ m = 2 # number of environments
 @variables t 
 @register control_pieces(t)
 @register residence_times_matrix(t, i, j)
-@parameters γₑ γᵢ β[1:m] N[1:n]
+@parameters N[1:n]
 @variables S[1:n](t) E[1:n](t) I[1:n](t) R[1:n](t) C[1:n](t) λ[1:n](t)
+
+
+if variable_rate 
+    @variables γₑ(t) γᵢ(t)
+else 
+    @parameters γₑ γᵢ
+end 
+
+β = get_beta(variable_beta, t) 
 #@variables TRM[1:n, 1:m](t)
 D = Differential(t) 
 #= +28 ... para ajustar los tiempos
@@ -23,8 +32,8 @@ confirmed prod 15 starts 2020-02-22
 adjusted_rtm(t,i,j) = residence_times_matrix(t+28, i, j)
 
 # epi_model_unknown_input y epi_model_known_input están definidas en multiclass_model.jl 
-@named episys_uknown = epi_model_unknown_input(t, n, m, adjusted_rtm, one_control)
-@named episys_known = epi_model_known_input(t, n, m, adjusted_rtm, control_pieces)
+@named episys_uknown = epi_model_unknown_input(t, n, m, adjusted_rtm, false, variable_rate, gamma_e_real, gamma_i_real, variable_beta, beta_exterior_real)
+@named episys_known = epi_model_known_input(t, n, m, adjusted_rtm, control_pieces, false, variable_rate,gamma_e_real, gamma_i_real, variable_beta, beta_exterior_real)
 
 #=
 Initial conditions 
@@ -61,6 +70,14 @@ u0_real = [
 
 u0 = make_x_uk(episys_uknown, 0.0110, S0, E0, I0, R0, C0)
 
+if variable_rate
+    global u0 = [u0; make_rate(gamma_e, gamma_i)]
+end 
+if variable_beta
+    global u0 = [u0; make_beta(beta_exterior)]
+end 
+
+
 beta_real = [1., 50.]
 beta = [1., beta_exterior] # hay que probar qué tan sensible es c/r al segundo valor β₂
 
@@ -68,7 +85,8 @@ beta = [1., beta_exterior] # hay que probar qué tan sensible es c/r al segundo 
 p_real = make_p(episys_known, 1/5.3, 1/8.3, total, beta_real)
 
 
-p = make_p(episys_uknown, 1/5.1, 1/7.2, total, beta) # otros valores 
+
+p = make_p(episys_uknown, gamma_e, gamma_i, total, beta) # otros valores 
 
 #=p1 = [
     [γₑ => 1/7]; # midiendo en semanas... un lío con la matrix P 
@@ -87,7 +105,6 @@ p = make_p(episys_uknown, 1/5.1, 1/7.2, total, beta) # otros valores
 
 using Plots: plot, plot!, savefig
 
-folder = "img/"
 #=
 plot(ts, control_pieces.(ts), )
 savefig(folder * "control" * make_img_name(p_real) * ".svg")

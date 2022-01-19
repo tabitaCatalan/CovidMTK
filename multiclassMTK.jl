@@ -11,7 +11,7 @@ m = 2 # number of environments
 @register control_pieces(t)
 @register controls(t, i)
 @register residence_times_matrix(t, i, j)
-@parameters β[1:m] N[1:n]
+@parameters N[1:n]
 @variables S[1:n](t) E[1:n](t) I[1:n](t) R[1:n](t) C[1:n](t) λ[1:n](t)
 
 if variable_rate 
@@ -19,6 +19,8 @@ if variable_rate
 else 
     @parameters γₑ γᵢ
 end 
+
+β = get_beta(variable_beta, t)
 
 #@variables TRM[1:n, 1:m](t)
 D = Differential(t) 
@@ -34,13 +36,11 @@ adjusted_rtm(t,i,j) = residence_times_matrix(t+28, i, j)
 #@named episys_uknown = epi_model_unknown_input(t, n, m, adjusted_rtm, one_control)
 #@named episys_known = epi_model_known_input(t, n, m, adjusted_rtm, controls, one_control)
 
-gamma_e_real = 1/5.3; gamma_i_real = 1/7.2
-@named episys_uknown = epi_model_unknown_input(t, n, m, adjusted_rtm, false, variable_rate, gamma_e_real, gamma_i_real)
-@named episys_known = epi_model_known_input(t, n, m, adjusted_rtm, controls, false, variable_rate,gamma_e_real, gamma_i_real)
+@named episys_uknown = epi_model_unknown_input(t, n, m, adjusted_rtm, false, variable_rate, gamma_e_real, gamma_i_real, variable_beta, beta_exterior_real)
+@named episys_known = epi_model_known_input(t, n, m, adjusted_rtm, controls, false, variable_rate, gamma_e_real, gamma_i_real, variable_beta, beta_exterior_real)
 #=
 Initial conditions 
 =#
-1
 
 S0 = [infocomunas[comuna].poblacion for comuna in comunas2];
 E0 = 10 * rand(n) .+ 20; # agregué gente random a una comuna random 
@@ -70,13 +70,16 @@ u0_real = [
     [C[i] => C0[i] for i in 1:n];
 ] =#
 
-gamma_e = 1/7.2 ; gamma_i = 1/4.2
+
 u0 = make_x_uk(simple_episys_uknown, 0.0110, S0, E0, I0, R0, C0)
 if variable_rate
     global u0 = [u0; make_rate(gamma_e, gamma_i)]
 end 
+if variable_beta
+    global u0 = [u0; make_beta(beta_exterior)]
+end 
 
-beta_real = [1., 51.]
+beta_real = [1., beta_exterior_real]
 beta = [1., beta_exterior] # hay que probar qué tan sensible es c/r al segundo valor β₂
 
 
@@ -96,7 +99,7 @@ prob_known = ODEProblem(simple_episys_known, u0_real, (0.0,T), p_real, jac = tru
 
 #prob1 = ODEProblem(simple_epi_system, u0, (0.0,400.0), p_real);
 #prob2 = ODEProblem(simple_epi_system, u0, (0.0,400.0), p);
-sol = solve(prob_known, Tsit5(), saveat = 1.);
+sol = solve(prob_known, Tsit5(), saveat = dt);
 synthetic_obs = [sol[C[1]] sol[C[2]]];
 
 
@@ -111,7 +114,6 @@ plot(sol, vars = (t, γₑ))
 
 using Plots: plot, plot!, savefig
 
-folder = "img/"
 #=
 plot(ts, control_pieces.(ts), )
 savefig(folder * "control" * make_img_name(p_real) * ".svg")

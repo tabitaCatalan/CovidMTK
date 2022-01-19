@@ -38,17 +38,22 @@ function make_max_vals(x)
         [R[i] => x[4] * S0[i] for i in 1:n];
         [C[i] => x[5] * S0[i] for i in 1:n];
         make_rate(x[7], x[7]); # solo si variable_rate = true 
+        make_beta(x[8]); # solo si variable_beta = true 
     ]; 
 end 
 
 #max_values = make_max_vals([0.1, 0.007, 0.005, 0.07, 0.07, 2e-1]);
-max_values = make_max_vals([0.1, 0.007, 0.005, 0.07, 0.07, 2e-1, 1.]);
+#max_values = make_max_vals([0.1, 0.007, 0.005, 0.07, 0.07, 2e-1, 1., 100.]); # ruido inicial 
+max_values = make_max_vals([5e-2, 8e-8, 8e-8, 8e-8, 5e-3, 2., 1/20., 30.]); # este es el valor que usé en el caso sintético con 2 comunas, inicial 
 
-max_values_v2 = make_max_vals([5e-2, 8e-8, 8e-8, 8e-8, 5e-3, 2e-4, 1/20.]);
+#max_values_v2 = make_max_vals([5e-3, 2e-9, 2e-9, 2e-9, 8e-5, 8e-6, 1/20., 5.]); # ruido del proceso 
+max_values_v2 = make_max_vals([5e-2, 8e-8, 8e-8, 8e-8, 5e-3, 3e-2, 1/20., 5.]); # este es el valor que usé en el caso sintético con 2 comunas 
 #max_values_v2 = make_max_vals([5e-2, 8e-8, 8e-8, 8e-8, 5e-3, 2e-4]);
 
+#max_values_v2 = make_max_vals([0.06, 0.0007, 0.0005, 0.007, 0.007, 2e-2, 1., 50.]); # ruido inicial 
+
 max_values_vec = ModelingToolkit.varmap_to_vars(max_values, states(simple_episys_uknown))
-max_values_vec_v2 = ModelingToolkit.varmap_to_vars(max_values, states(simple_episys_uknown))
+max_values_vec_v2 = ModelingToolkit.varmap_to_vars(max_values_v2, states(simple_episys_uknown))
 
 #=
 (S + E + R)./ total
@@ -111,6 +116,7 @@ lowpass_parameters = ModelingToolkit.varmap_to_vars(
         #[α[i] => 1. for i in 1:n];
         make_alpha(simple_episys_uknown, lowpass_alpha);
         make_rate(1., 1.);
+        make_beta(1.);
         ]
     ,states(simple_episys_uknown)
 );
@@ -213,12 +219,12 @@ function kalman_iteration(u0, p)
     #                                        x -> SI2(x, total), 
     #                                        UM)
     dims = length(u0vec)
-    Q = Diagonal(sqrt(dt) * SVector{dims}(ones(dims)))
+    Q = Diagonal(1/sqrt(dt) * SVector{dims}(ones(dims)))
     rkx = KalmanFilter.RK4Dx(epi_dynamics, epi_jacobian, pvec, dt)
     
     integrity(x) = SI2(x, total)
-    nlupdater = NLUpdater(rkx, F(u0vec), Q, copy(u0vec), 0., 0., integrity)
-    #nlupdater = NLUpdater(rkx, F(max_values_vec_v2), Q, copy(u0vec), 0., 0., integrity)
+    #nlupdater = NLUpdater(rkx, F(u0vec), Q, copy(u0vec), 0., 0., integrity)
+    nlupdater = NLUpdater(rkx, F(max_values_vec_v2), Q, copy(u0vec), 0., 0., integrity)
     system = KalmanFilter.Measurements(observaciones, dt)
 
     G = ones(2 * n)
@@ -226,7 +232,7 @@ function kalman_iteration(u0, p)
     G = Diagonal(SVector{2n}(G))
 
     obsdim = size(H)[1]
-    R = Diagonal(sqrt(dt) * SVector{obsdim}(ones(obsdim)))
+    R = Diagonal(1/sqrt(dt) * SVector{obsdim}(ones(obsdim)))
     observer = KalmanFilter.SimpleLinearObserver(H, zeros(2n), G, R)
 
     #=
@@ -247,7 +253,7 @@ function kalman_iteration(u0, p)
     results, xs, Ps
 end 
 
-function initial_u0(a0, gamma_e, gamma_i)
+function initial_u0(a0, gamma_e, gamma_i, beta_exterior)
     u0 = [
         make_alpha(simple_episys_uknown, a0);
         [S[i] => S0[i] for i in 1:n]; 
@@ -256,6 +262,7 @@ function initial_u0(a0, gamma_e, gamma_i)
         [I[i] => I0[i] for i in 1:n];
         [C[i] => C0[i] for i in 1:n];
         make_rate(gamma_e, gamma_i);
+        make_beta(beta_exterior);
     ];
 end 
 
